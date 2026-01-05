@@ -6,6 +6,7 @@ import { BookOpen, Mic2, Settings, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 import { VoiceState, ConversationTurn } from "@/types/voice";
+import { ModelSettings } from "@/components/realtime-voice/ModelSettings";
 import "@/lib/i18n";
 
 export default function RealtimeVoicePage() {
@@ -19,6 +20,13 @@ export default function RealtimeVoicePage() {
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // 智能调度配置
+  const [modelMode, setModelMode] = useState<'auto' | 'quality' | 'fast'>('auto');
+  const [dataSaver, setDataSaver] = useState(false);
+  const [currentModel, setCurrentModel] = useState<string>('step-audio-2-mini');
+  const [complexityScore, setComplexityScore] = useState<number | undefined>();
+  const [networkLatency, setNetworkLatency] = useState<number>(0);
+
   const clientRef = useRef<StepFunRealtimeClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -31,6 +39,14 @@ export default function RealtimeVoicePage() {
     if (!apiKey || clientRef.current) return;
 
     try {
+      // 根据模式确定模型
+      let preferredModel: 'step-audio-2' | 'step-audio-2-mini' | undefined = undefined;
+      if (modelMode === 'quality') {
+        preferredModel = 'step-audio-2';
+      } else if (modelMode === 'fast') {
+        preferredModel = 'step-audio-2-mini';
+      }
+
       const client = new StepFunRealtimeClient({
         apiKey,
         voice: "qingchunshaonv",
@@ -38,6 +54,9 @@ export default function RealtimeVoicePage() {
           language === "zh"
             ? "你是由阶跃星辰提供的AI导师，擅长通过对话启发思考。请用温暖、鼓励的语气，每次回答不超过50字。"
             : "You are an AI tutor provided by StepFun. You inspire thinking through conversation. Please answer warmly and encouragingly, keep responses under 50 words.",
+        enableModelSelection: modelMode === 'auto',
+        dataSaver,
+        preferredModel,
       });
 
       await client.connect(
@@ -80,12 +99,21 @@ export default function RealtimeVoicePage() {
       );
 
       clientRef.current = client;
+
+      // 获取当前模型信息
+      const modelInfo = client.getCurrentModel();
+      setCurrentModel(modelInfo.model);
+      setComplexityScore(modelInfo.info?.complexityScore);
+
+      // 测量网络延迟
+      const latency = await client.measureNetworkLatency();
+      setNetworkLatency(latency);
     } catch (error) {
       console.error("Failed to initialize client:", error);
       alert(t("alerts.connectionFailed"));
       setVoiceState("idle");
     }
-  }, [apiKey, language, isAiResponding, currentTurn, t]);
+  }, [apiKey, language, isAiResponding, currentTurn, t, modelMode, dataSaver]);
 
   // 开始录音
   const startRecording = async () => {
@@ -230,17 +258,29 @@ export default function RealtimeVoicePage() {
             </div>
           </motion.div>
 
-          <motion.button
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-2 rounded-lg hover:bg-muted transition-smooth"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Settings className="w-5 h-5 text-muted-foreground" />
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {/* 模型设置按钮 */}
+            <ModelSettings
+              onModeChange={setModelMode}
+              onDataSaverChange={setDataSaver}
+              currentModel={currentModel}
+              complexityScore={complexityScore}
+              networkLatency={networkLatency}
+            />
+
+            {/* 系统设置按钮 */}
+            <motion.button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 rounded-lg hover:bg-muted transition-smooth"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </motion.button>
+          </div>
         </div>
       </header>
 

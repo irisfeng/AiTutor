@@ -1,10 +1,22 @@
 import { VoiceState } from '@/types/voice';
+import {
+  AudioModelSelector,
+  ModelSelectionContext,
+  ModelSelectionResult,
+  NetworkLatencyMeasurer,
+  DevicePerformanceDetector,
+} from './model-selector';
+import { getModelAnalytics, ModelUsageRecord } from './model-analytics';
 
 export interface StepFunConfig {
   apiKey: string;
   model?: string;
   voice?: string;
   instructions?: string;
+  // 智能调度配置
+  enableModelSelection?: boolean;
+  dataSaver?: boolean;
+  preferredModel?: 'step-audio-2' | 'step-audio-2-mini';
 }
 
 export class StepFunRealtimeClient {
@@ -18,20 +30,42 @@ export class StepFunRealtimeClient {
   private isPlaying: boolean = false;
   private sourceNode: AudioBufferSourceNode | null = null;
 
+  // 智能调度相关
+  private modelSelector: AudioModelSelector;
+  private latencyMeasurer: NetworkLatencyMeasurer;
+  private performanceDetector: DevicePerformanceDetector;
+  private conversationTurns: number = 0;
+  private currentModel: 'step-audio-2' | 'step-audio-2-mini' = 'step-audio-2-mini';
+  private lastUserQuery: string = '';
+  private responseStartTime: number = 0;
+  private selectedModelInfo: ModelSelectionResult | null = null;
+
   constructor(config: StepFunConfig) {
     this.config = {
-      model: 'step-audio-2-mini',  // 使用 step-audio-2-mini 模型
-      voice: 'qingchunshaonv',  // step-audio-2-mini 只支持青春少女和温柔男声
+      model: 'step-audio-2-mini',
+      voice: 'qingchunshaonv',
       instructions: '你是由阶跃星辰提供的AI聊天助手，你擅长中文，英文，以及多种其他语言的对话。请简洁友好地回答，每次回答不超过50字。请使用默认女声与用户交流。',
+      enableModelSelection: true, // 默认启用智能调度
+      dataSaver: false,
       ...config,
     };
 
     // 验证音色是否有效
     const validVoices = ['qingchunshaonv', 'wenrounansheng'];
     if (!validVoices.includes(this.config.voice || '')) {
-      console.warn(`⚠️ Invalid voice for step-audio-2-mini: ${this.config.voice}`);
+      console.warn(`⚠️ Invalid voice: ${this.config.voice}`);
       console.warn(`🔄 Auto-changing to: qingchunshaonv`);
       this.config.voice = 'qingchunshaonv';
+    }
+
+    // 初始化智能调度组件
+    this.modelSelector = new AudioModelSelector();
+    this.latencyMeasurer = NetworkLatencyMeasurer.getInstance();
+    this.performanceDetector = DevicePerformanceDetector.getInstance();
+
+    // 如果用户指定了模型，则使用指定模型
+    if (this.config.preferredModel) {
+      this.currentModel = this.config.preferredModel;
     }
   }
 
@@ -116,10 +150,12 @@ export class StepFunRealtimeClient {
         turn_detection: {
           type: 'server_vad',
         },
+        model: this.currentModel, // 使用当前选择的模型
       },
     };
 
     console.log('📤 Sending session update');
+    console.log('   Model:', this.currentModel);
     console.log('   Voice:', this.config.voice);
     this.ws.send(JSON.stringify(sessionUpdate));
     console.log('✅ Session update sent');
@@ -162,6 +198,8 @@ export class StepFunRealtimeClient {
       case 'response.audio.done':
       case 'response.audio_transcript.done':
         console.log('✅ Response done');
+        // 记录使用数据
+        this.trackUsage();
         break;
 
       case 'error':
@@ -208,6 +246,113 @@ export class StepFunRealtimeClient {
 
     this.ws.send(JSON.stringify(message));
     console.log('🚀 Conversation started');
+
+    // 记录响应开始时间
+    this.responseStartTime = Date.now();
+  }
+
+  /**
+   * 设置用户查询文本（用于模型选择）
+   */
+  setUserQuery(query: string) {
+    this.lastUserQuery = query;
+    this.conversationTurns++;
+
+    // 如果启用了智能调度，选择模型
+    if (this.config.enableModelSelection && !this.config.preferredModel) {
+      this.selectAndSwitchModel();
+    }
+  }
+
+  /**
+   * 智能选择模型并切换
+   */
+  private async selectAndSwitchModel() {
+    const context = this.buildSelectionContext();
+    const result = this.modelSelector.selectModel(context);
+
+    this.selectedModelInfo = result;
+
+    // 如果选择的模型与当前不同，需要重新创建会话
+    if (result.selectedModel !== this.currentModel) {
+      console.log('🔄 模型切换:', result.reason);
+      this.currentModel = result.selectedModel;
+
+      // 重新创建会话
+      this.sendSessionUpdate();
+    } else {
+      console.log('✅ 继续使用当前模型:', result.reason);
+    }
+  }
+
+  /**
+   * 构建模型选择上下文
+   */
+  private buildSelectionContext(): ModelSelectionContext {
+    return {
+      userQuery: this.lastUserQuery,
+      conversationTurns: this.conversationTurns,
+      networkLatency: this.latencyMeasurer.getAverageLatency(),
+      devicePerformance: this.performanceDetector.detectPerformance(),
+      userPreferences: {
+        dataSaver: this.config.dataSaver || false,
+        preferredModel: this.config.preferredModel,
+      },
+    };
+  }
+
+  /**
+   * 获取当前使用的模型信息
+   */
+  getCurrentModel(): { model: string; info: ModelSelectionResult | null } {
+    return {
+      model: this.currentModel,
+      info: this.selectedModelInfo,
+    };
+  }
+
+  /**
+   * 记录本次对话的使用数据
+   */
+  private trackUsage() {
+    if (!this.selectedModelInfo) return;
+
+    const responseTime = Date.now() - this.responseStartTime;
+
+    const record: ModelUsageRecord = {
+      timestamp: Date.now(),
+      modelUsed: this.currentModel,
+      complexityScore: this.selectedModelInfo.complexityScore,
+      responseTime,
+      networkLatency: this.latencyMeasurer.getAverageLatency(),
+      devicePerformance: this.performanceDetector.detectPerformance(),
+      reason: this.selectedModelInfo.reason,
+    };
+
+    const analytics = getModelAnalytics();
+    analytics.trackModelUsage(record);
+
+    console.log('📊 使用记录已保存:', {
+      模型: this.currentModel,
+      响应时间: `${responseTime}ms`,
+      复杂度分数: this.selectedModelInfo.complexityScore,
+    });
+  }
+
+  /**
+   * 重置对话轮次
+   */
+  resetConversation() {
+    this.conversationTurns = 0;
+    this.lastUserQuery = '';
+    this.selectedModelInfo = null;
+  }
+
+  /**
+   * 测量网络延迟（异步）
+   */
+  async measureNetworkLatency(): Promise<number> {
+    return await this.latencyMeasurer.measureLatency();
   }
 
   clearAudioBuffer() {
