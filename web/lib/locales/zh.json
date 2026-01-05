@@ -1,0 +1,45 @@
+{
+  "translation": {
+    "header": {
+      "title": "AI Tutor",
+      "subtitle": "智能学习助手"
+    },
+    "hero": {
+      "title": "开启学习之旅",
+      "description": "通过自然对话探索知识的海洋，让 AI 成为你最贴心的学习伙伴"
+    },
+    "status": {
+      "idle": "点击开始对话",
+      "connecting": "连接中...",
+      "listening": "正在聆听...",
+      "thinking": "思考中...",
+      "speaking": "AI 正在回答..."
+    },
+    "button": {
+      "configureApiKey": "配置 API Key →",
+      "cancel": "取消",
+      "done": "完成"
+    },
+    "settings": {
+      "title": "设置",
+      "apiKey": "StepFun API Key",
+      "apiKeyPlaceholder": "sk-...",
+      "apiKeyHelp": "在",
+      "apiKeyPlatform": "StepFun 平台",
+      "apiKeyGet": "获取 API Key",
+      "language": "语言 / Language"
+    },
+    "conversation": {
+      "you": "你",
+      "ai": "AI Tutor",
+      "history": "对话历史"
+    },
+    "footer": {
+      "poweredBy": "Powered by StepFun Realtime API"
+    },
+    "alerts": {
+      "connectionFailed": "连接失败，请检查 API Key 是否正确",
+      "microphoneAccess": "无法访问麦克风，请检查权限设置"
+    }
+  }
+}

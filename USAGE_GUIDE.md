@@ -1,4 +1,4 @@
-# 🎤 DeepTutor Voice AI - 使用指南
+# 🎤 AiTutor - 使用指南
 
 ## ✨ 已完成功能
 
@@ -258,6 +258,6 @@ MIT License
 
 ---
 
-**Created with ❤️ by DeepTutor Team**
+**Created with ❤️ by AiTutor Team**
 
 **最后更新**: 2025-12-30

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import { GlobalProvider } from "@/context/GlobalContext";
 
 // Use Inter font with swap display for better loading
 const font = Inter({
@@ -12,8 +10,8 @@ const font = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DeepTutor Platform",
-  description: "Multi-Agent Teaching & Research Copilot",
+  title: "AiTutor - 实时 AI 语音助手",
+  description: "基于 StepFun Realtime API 的实时语音交互应用",
 };
 
 export default function RootLayout({
@@ -22,17 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={font.className}>
-        <GlobalProvider>
-          <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden transition-colors duration-200">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
-              <div className="w-full p-8">{children}</div>
-            </main>
-          </div>
-        </GlobalProvider>
-      </body>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className={font.className}>{children}</body>
     </html>
   );
 }

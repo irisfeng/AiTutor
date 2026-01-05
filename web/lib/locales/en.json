@@ -1,0 +1,45 @@
+{
+  "translation": {
+    "header": {
+      "title": "AI Tutor",
+      "subtitle": "Smart Learning Assistant"
+    },
+    "hero": {
+      "title": "Begin Your Learning Journey",
+      "description": "Explore the ocean of knowledge through natural conversation, let AI be your most dedicated learning companion"
+    },
+    "status": {
+      "idle": "Click to start conversation",
+      "connecting": "Connecting...",
+      "listening": "Listening...",
+      "thinking": "Thinking...",
+      "speaking": "AI is responding..."
+    },
+    "button": {
+      "configureApiKey": "Configure API Key →",
+      "cancel": "Cancel",
+      "done": "Done"
+    },
+    "settings": {
+      "title": "Settings",
+      "apiKey": "StepFun API Key",
+      "apiKeyPlaceholder": "sk-...",
+      "apiKeyHelp": "Get your API Key at",
+      "apiKeyPlatform": "StepFun Platform",
+      "apiKeyGet": "Get API Key",
+      "language": "Language / 语言"
+    },
+    "conversation": {
+      "you": "You",
+      "ai": "AI Tutor",
+      "history": "Conversation History"
+    },
+    "footer": {
+      "poweredBy": "Powered by StepFun Realtime API"
+    },
+    "alerts": {
+      "connectionFailed": "Connection failed, please check if API Key is correct",
+      "microphoneAccess": "Cannot access microphone, please check permission settings"
+    }
+  }
+}

@@ -1,26 +1,30 @@
 {
-  "name": "deeptutor-voice",
+  "name": "aitutor",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "next lint"
   },
   "dependencies": {
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.4",
+    "i18next": "^25.7.3",
     "lucide-react": "^0.294.0",
     "next": "14.0.3",
     "react": "^18",
     "react-dom": "^18",
-    "tailwind-merge": "^2.0.0"
+    "react-i18next": "^16.5.1",
+    "tailwind-merge": "^2.0.0",
+    "ws": "^8.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/ws": "^8.0.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.0.3",

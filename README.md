@@ -1,4 +1,4 @@
-# DeepTutor Voice - 实时 AI 语音助手
+# AiTutor - 实时 AI 语音助手
 
 > 基于 StepFun Realtime API 的实时语音交互应用
 

@@ -117,7 +117,7 @@ export default function SettingsPanel({
                     关于
                   </h3>
                   <div className="space-y-2 text-sm text-gray-500">
-                    <p>DeepTutor Voice AI v1.0</p>
+                    <p>AiTutor v1.0</p>
                     <p>基于 StepFun Realtime API</p>
                     <p className="text-xs mt-4">
                       点击麦克风按钮开始实时语音对话

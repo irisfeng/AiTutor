@@ -1,55 +1,47 @@
 # Web Frontend
 
-The Web frontend is a Next.js 14 application that provides the user interface for the DeepTutor system.
+The Web frontend is a Next.js 14 application that provides the user interface for the AiTutor system.
 
 ## 📋 Overview
 
 The frontend provides:
 
-- Dashboard with activity tracking
-- Knowledge base management
-- Problem solving interface
-- Question generation interface
-- Research interface
-- Guided learning interface
-- Co-Writer interface
-- Notebook management
-- Idea generation interface
+- 实时语音 AI 交互
+- 对话历史管理
+- 多语言支持（中文/English）
+- 优雅的深色主题 UI
+- 实时音频可视化
 
 ## 🏗️ Architecture
 
 ```
 web/
 ├── app/                      # Next.js app directory
-│   ├── page.tsx             # Dashboard (home page)
+│   ├── page.tsx             # Home page (redirects to /realtime-voice)
 │   ├── layout.tsx            # Root layout
 │   ├── globals.css           # Global styles
-│   ├── knowledge/            # Knowledge base pages
-│   ├── solver/               # Problem solving pages
-│   ├── question/             # Question generation pages
-│   ├── research/             # Research pages
-│   ├── guide/                # Guided learning pages
-│   ├── co_writer/            # Co-Writer pages
-│   ├── notebook/             # Notebook pages
-│   ├── ideagen/              # Idea generation pages
-│   └── settings/             # Settings pages
+│   └── realtime-voice/       # Realtime voice interaction page
+│       └── page.tsx          # Main voice interaction page
 ├── components/               # React components
-│   ├── Sidebar.tsx           # Navigation sidebar
-│   ├── SystemStatus.tsx      # System status indicator
-│   ├── ActivityDetail.tsx    # Activity detail view
-│   ├── CoWriterEditor.tsx    # Co-Writer editor
-│   ├── AddToNotebookModal.tsx # Add to notebook modal
-│   └── ui/                   # UI components
-│       ├── Button.tsx
-│       └── Modal.tsx
-├── context/                  # React context
-│   └── GlobalContext.tsx     # Global state management
+│   └── realtime-voice/       # Voice interaction components
+│       ├── AudioVisualizer.tsx      # Audio waveform visualization
+│       ├── ConversationBubble.tsx   # Conversation message bubbles
+│       ├── ConversationPanel.tsx    # Conversation history panel
+│       ├── MicrophoneButton.tsx     # Microphone control button
+│       ├── ParticleBackground.tsx   # Animated particle background
+│       ├── SettingsPanel.tsx        # Settings modal panel
+│       └── StatusIndicator.tsx      # Voice status indicator
 ├── lib/                      # Utilities
-│   └── api.ts                # API client
+│   ├── i18n.ts               # Internationalization configuration
+│   ├── locales/              # Language files (zh.json, en.json)
+│   └── stepfun-realtime.ts   # StepFun Realtime API client
+├── types/                    # TypeScript type definitions
+│   └── voice.ts              # Voice-related types
 ├── package.json              # Dependencies
 ├── tsconfig.json             # TypeScript configuration
-├── tailwind.config.js        # Tailwind CSS configuration
-└── postcss.config.js         # PostCSS configuration
+├── tailwind.config.ts        # Tailwind CSS configuration
+├── server.js                 # WebSocket proxy server
+└── postcss.config.mjs        # PostCSS configuration
 ```
 
 ## 🛠️ Technology Stack
@@ -58,9 +50,10 @@ web/
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: Custom components with Lucide React icons
-- **Markdown**: react-markdown with KaTeX for math
-- **PDF Export**: jsPDF + html2canvas
 - **Animations**: Framer Motion
+- **i18n**: react-i18next
+- **Realtime API**: StepFun Realtime API
+- **WebSocket**: ws (for WebSocket proxy server)
 
 ## 📦 Dependencies
 
@@ -71,13 +64,13 @@ web/
   "next": "14.0.3",
   "react": "^18",
   "react-dom": "^18",
-  "react-markdown": "^9.0.1",
-  "rehype-katex": "^7.0.0",
-  "remark-math": "^6.0.0",
   "lucide-react": "^0.294.0",
   "framer-motion": "^10.16.4",
-  "jspdf": "^2.5.1",
-  "html2canvas": "^1.4.1"
+  "i18next": "^25.7.3",
+  "react-i18next": "^16.5.1",
+  "ws": "^8.0.0",
+  "clsx": "^2.0.0",
+  "tailwind-merge": "^2.0.0"
 }
 ```
 
@@ -96,7 +89,7 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3782` (or port configured in `config/main.yaml`).
+The application will be available at `http://localhost:3000`.
 
 ### Build
 
@@ -107,216 +100,135 @@ npm start
 
 ## 📁 Key Components
 
-### Dashboard (app/page.tsx)
+### Main Page (app/realtime-voice/page.tsx)
 
-Main dashboard showing:
+Main voice interaction page featuring:
 
-- Recent activities
-- Knowledge base overview
-- Notebook statistics
-- Quick access to modules
+- Realtime voice conversation with AI
+- Conversation history display
+- Settings panel (API Key, language)
+- Status indicators (connecting, listening, thinking, speaking)
 
-### API Client (lib/api.ts)
+### StepFun Realtime Client (lib/stepfun-realtime.ts)
 
-Centralized API client for backend communication:
+WebSocket client for StepFun Realtime API:
 
 ```typescript
-import { apiUrl } from "@/lib/api";
+import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 
-// REST API
-const response = await fetch(`${apiUrl}/knowledge/list`);
+const client = new StepFunRealtimeClient({
+  apiKey: "your-api-key",
+  voice: "qingchunshaonv",  // or "wenrounansheng"
+  instructions: "You are an AI tutor...",
+});
 
-// WebSocket
-const ws = new WebSocket(`${wsUrl}/api/v1/solve`);
+await client.connect(
+  onStateChange,  // (state: VoiceState) => void
+  onTextUpdate,   // (text: string) => void
+  onAudioData     // (audioData: string) => Promise<void>
+);
 ```
 
-### Global Context (context/GlobalContext.tsx)
+### Voice Components
 
-Manages global state:
-
-- System status
-- User preferences
-- Active sessions
-
-### Sidebar (components/Sidebar.tsx)
-
-Navigation sidebar with links to all modules.
+- **MicrophoneButton**: Central microphone control button
+- **StatusIndicator**: Voice status indicator (idle, connecting, listening, thinking, speaking)
+- **AudioVisualizer**: Real-time audio waveform visualization
+- **ConversationPanel**: Conversation history display
+- **ConversationBubble**: Individual message bubbles
+- **SettingsPanel**: Settings modal (API Key, language)
+- **ParticleBackground**: Animated particle background
 
 ## 🔌 API Integration
 
-### REST API
+### StepFun Realtime API
+
+The app uses StepFun's Realtime API for voice interaction:
 
 ```typescript
-const response = await fetch(`${apiUrl}/api/v1/knowledge/list`, {
-  method: "GET",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-const data = await response.json();
+// WebSocket connection
+wss://api.stepfun.com/v1/realtime?authorization=<API_KEY>
+
+// Audio format
+- Input: PCM16, 24kHz, mono
+- Output: PCM16, 24kHz, mono
 ```
 
-### WebSocket
+### Features
 
-```typescript
-const ws = new WebSocket(`${wsUrl}/api/v1/solve`);
-
-ws.onopen = () => {
-  ws.send(
-    JSON.stringify({
-      question: "Your question",
-      kb_name: "ai_textbook",
-    }),
-  );
-};
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  // Handle streaming data
-};
-
-ws.onerror = (error) => {
-  console.error("WebSocket error:", error);
-};
-
-ws.onclose = () => {
-  console.log("WebSocket closed");
-};
-```
+- **Server VAD**: Automatic voice activity detection
+- **Bidirectional interruption**: Natural conversation flow
+- **Context management**: Automatic multi-turn conversation context
+- **Multilingual**: Chinese (zh) and English (en) support
 
 ## 🎨 Styling
 
 ### Tailwind CSS
 
-The project uses Tailwind CSS for styling. Configuration in `tailwind.config.js`.
+The project uses Tailwind CSS for styling. Configuration in `tailwind.config.ts`.
 
-### Global Styles
+### Design System
 
-Global styles in `app/globals.css` including:
+- **Colors**: Deep space theme with cyan and violet accents
+- **Typography**: Inter font family
+- **Effects**: Glass morphism, smooth animations
+- **Responsive**: Mobile and desktop friendly
 
-- Base styles
-- Custom CSS variables
-- Utility classes
+## 🌍 Internationalization
 
-## 📱 Pages
+The app supports multiple languages using react-i18next:
 
-### Knowledge Base (`/knowledge`)
-
-- List knowledge bases
-- Create new knowledge base
-- Upload documents
-- View knowledge base details
-
-### Problem Solving (`/solver`)
-
-- Input problem
-- Select knowledge base
-- Real-time solving with streaming
-- View solution
-
-### Question Generation (`/question`)
-
-- Configure question requirements
-- Generate questions
-- View generated questions
-
-### Research (`/research`)
-
-- Input research topic
-- Select research mode
-- Real-time research progress
-- View research report
-
-### Guided Learning (`/guide`)
-
-- Select notebook
-- Generate learning plan
-- Interactive learning pages
-- Q&A during learning
-
-### Co-Writer (`/co_writer`)
-
-- Markdown editor
-- AI text editing
-- Automatic annotation
-- TTS narration
-
-### Notebook (`/notebook`)
-
-- List notebooks
-- Create/edit notebooks
-- View notebook records
-- Organize records
-
-### Idea Generation (`/ideagen`)
-
-- Select notebook
-- Generate research ideas
-- View generated ideas
-
-## ⚙️ Configuration
-
-### API Base URL
-
-Configured in `lib/api.ts`:
-
-```typescript
-export const apiUrl =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8001";
-export const wsUrl = process.env.NEXT_PUBLIC_WS_BASE || "ws://localhost:8001";
-```
-
-Set in `.env.local`:
-
-```bash
-NEXT_PUBLIC_API_BASE=http://localhost:8001
-NEXT_PUBLIC_WS_BASE=ws://localhost:8001
-```
-
-## 🔗 Related Modules
-
-- **Backend API**: `src/api/` - FastAPI backend
-- **Agents**: `src/agents/` - Agent implementations
-- **Config**: `config/` - Configuration files
+- **Languages**: Chinese (zh), English (en)
+- **Language files**: `lib/locales/zh.json`, `lib/locales/en.json`
+- **Configuration**: `lib/i18n.ts`
 
 ## 🛠️ Development
 
-### Adding a New Page
+### Adding a New Language
 
-1. Create page in `app/`:
+1. Create a new language file in `lib/locales/`:
 
-   ```typescript
-   // app/my-page/page.tsx
-   export default function MyPage() {
-     return <div>My Page</div>
+   ```json
+   // lib/locales/fr.json
+   {
+     "translation": {
+       "header": {
+         "title": "AI Tutor",
+         "subtitle": "Assistant d'apprentissage intelligent"
+       }
+     }
    }
    ```
 
-2. Add navigation link in `components/Sidebar.tsx`
-
-### Adding a New Component
-
-1. Create component in `components/`:
+2. Update `lib/i18n.ts`:
 
    ```typescript
-   // components/MyComponent.tsx
-   export default function MyComponent() {
-     return <div>My Component</div>
-   }
+   import fr from './locales/fr.json';
+
+   const resources = {
+     zh: { translation: zh.translation },
+     en: { translation: en.translation },
+     fr: { translation: fr.translation },
+   };
    ```
 
-2. Export from `components/index.ts` if needed
+### Customizing AI Instructions
 
-### Styling Guidelines
+Edit the `instructions` parameter in `app/realtime-voice/page.tsx`:
 
-- Use Tailwind CSS utility classes
-- Follow existing component patterns
-- Use Lucide React for icons
-- Maintain responsive design
+```typescript
+instructions: language === "zh"
+  ? "你是 AI 导师，擅长启发思考..."
+  : "You are an AI tutor who inspires thinking...",
+```
 
 ## ⚠️ Notes
 
-1. **API URL**: Ensure API base URL matches backend configuration
-2. **WebSocket**: WebSocket URL must use `ws://` or `wss://` protocol
-3. **CORS**: Backend must allow frontend origin in CORS settings
-4. **Environment Variables**: Use `NEXT_PUBLIC_` prefix for client-side variables
+1. **API Key**: Required for StepFun Realtime API
+2. **WebSocket Proxy**: Uses proxy server in `server.js` to avoid CORS issues
+3. **Audio Permissions**: Requires microphone access
+4. **Browser Support**: Best experience in Chrome/Edge browsers
+
+## 📄 License
+
+MIT License
