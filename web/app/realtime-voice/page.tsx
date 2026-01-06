@@ -18,7 +18,6 @@ export default function RealtimeVoicePage() {
   const [conversations, setConversations] = useState<ConversationTurn[]>([]);
   const [currentTurn, setCurrentTurn] = useState<Partial<ConversationTurn>>({});
   const [isAiResponding, setIsAiResponding] = useState(false);
-  const userMessageBufferRef = useRef<string>(""); // 用于累积用户消息
   const [showSettings, setShowSettings] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>(""); // 新增：错误信息
 
@@ -70,13 +69,13 @@ export default function RealtimeVoicePage() {
           }
           if (state === "thinking" && !isAiResponding) {
             setIsAiResponding(true);
-            // 在用户开始思考时，调用 setUserQuery 触发模型选择
-            if (userMessageBufferRef.current && clientRef.current) {
-              console.log('🎤 User speech completed, triggering model selection...');
-              clientRef.current.setUserQuery(userMessageBufferRef.current);
-            }
           } else if (state === "idle" && isAiResponding) {
             if (currentTurn.userMessage || currentTurn.aiResponse) {
+              // 记录用户查询（用于分析，但不切换模型）
+              if (currentTurn.userMessage && clientRef.current) {
+                clientRef.current.setUserQuery(currentTurn.userMessage);
+              }
+
               setConversations((prev) => [
                 ...prev,
                 {
@@ -89,7 +88,6 @@ export default function RealtimeVoicePage() {
             }
             setCurrentTurn({});
             setIsAiResponding(false);
-            userMessageBufferRef.current = ""; // 清空用户消息缓冲
           }
         },
         (text) => {
@@ -99,11 +97,10 @@ export default function RealtimeVoicePage() {
               aiResponse: (prev.aiResponse || "") + text,
             }));
           } else {
-            // 累积用户消息
-            userMessageBufferRef.current += text;
+            // 用户说话（转录为文本）
             setCurrentTurn((prev) => ({
               ...prev,
-              userMessage: userMessageBufferRef.current,
+              userMessage: (prev.userMessage || "") + text,
             }));
           }
         },

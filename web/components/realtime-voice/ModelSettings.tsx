@@ -139,10 +139,10 @@ export function ModelSettings({
                   <div>
                     <div className="flex items-center gap-2 text-white font-medium">
                       <TrendingUp className="w-4 h-4" />
-                      自动选择（推荐）
+                      自动模式（推荐）
                     </div>
                     <p className="text-sm text-white/60 mt-1">
-                      根据问题复杂度自动切换模型，平衡性能与成本
+                      使用 step-audio-2-mini，适合日常对话，性能与成本平衡
                     </p>
                   </div>
                 </label>

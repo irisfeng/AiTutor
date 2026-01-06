@@ -277,58 +277,30 @@ export class StepFunRealtimeClient {
   }
 
   /**
-   * 设置用户查询文本（用于模型选择）
+   * 设置用户查询文本（用于记录和分析，不再触发模型切换）
    */
   setUserQuery(query: string) {
-    console.log('🎯 setUserQuery called:', query);
+    console.log('🎯 User query:', query);
     this.lastUserQuery = query;
     this.conversationTurns++;
 
-    console.log('📊 Model selection config:', {
-      enableModelSelection: this.config.enableModelSelection,
-      preferredModel: this.config.preferredModel,
-    });
-
-    // 如果启用了智能调度，选择模型
+    // 记录复杂度分析（但不切换模型）
     if (this.config.enableModelSelection && !this.config.preferredModel) {
-      console.log('🔄 Triggering model selection...');
-      this.selectAndSwitchModel();
-    } else {
-      console.log('⏭️ Model selection skipped (disabled or preferred model set)');
+      const context = this.buildSelectionContext();
+      const result = this.modelSelector.selectModel(context);
+      this.selectedModelInfo = result;
+
+      console.log('📊 Complexity analysis:', {
+        score: result.complexityScore,
+        recommended: result.selectedModel,
+        current: this.currentModel,
+        note: 'Model will not switch during session',
+      });
     }
   }
 
   /**
-   * 智能选择模型并切换
-   */
-  private async selectAndSwitchModel() {
-    const context = this.buildSelectionContext();
-    const result = this.modelSelector.selectModel(context);
-
-    console.log('🎲 Model selection result:', {
-      selected: result.selectedModel,
-      current: this.currentModel,
-      complexity: result.complexityScore,
-      reason: result.reason,
-    });
-
-    this.selectedModelInfo = result;
-
-    // 如果选择的模型与当前不同，需要重新创建会话
-    if (result.selectedModel !== this.currentModel) {
-      console.log('🔄 模型切换:', result.reason);
-      console.log(`   从 ${this.currentModel} 切换到 ${result.selectedModel}`);
-      this.currentModel = result.selectedModel;
-
-      // 重新创建会话
-      this.sendSessionUpdate();
-    } else {
-      console.log('✅ 继续使用当前模型:', result.reason);
-    }
-  }
-
-  /**
-   * 构建模型选择上下文
+   * 构建模型选择上下文（仅用于分析）
    */
   private buildSelectionContext(): ModelSelectionContext {
     return {
