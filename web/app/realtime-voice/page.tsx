@@ -332,7 +332,7 @@ export default function RealtimeVoicePage() {
       </header>
 
       {/* Main Content */}
-      <div className="pt-24 pb-32 px-6 max-w-4xl mx-auto">
+      <div className="pt-32 pb-32 px-6 max-w-4xl mx-auto">
         {/* Welcome Section */}
         <motion.div
           className="text-center mb-12"
