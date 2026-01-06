@@ -309,13 +309,10 @@ export default function RealtimeVoicePage() {
               onPersonaChange={handlePersonaChange}
             />
 
-            {/* 模型设置按钮 */}
+            {/* 模型指示器 */}
             <ModelSettings
-              onModeChange={setModelMode}
-              onDataSaverChange={setDataSaver}
               currentModel={currentModel}
-              complexityScore={complexityScore}
-              networkLatency={networkLatency}
+              modelMode={modelMode}
             />
 
             {/* 系统设置按钮 */}
