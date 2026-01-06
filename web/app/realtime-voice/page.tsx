@@ -281,9 +281,9 @@ export default function RealtimeVoicePage() {
   };
 
   return (
-    <main className="min-h-screen bg-background texture-paper">
+    <main className="min-h-screen bg-background texture-paper flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <header className="flex-shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <motion.div
             className="flex items-center gap-3"
@@ -332,21 +332,22 @@ export default function RealtimeVoicePage() {
       </header>
 
       {/* Main Content */}
-      <div className="pt-32 pb-32 px-6 max-w-4xl mx-auto">
-        {/* Welcome Section */}
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
-            {t("hero.title")}
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            {t("hero.description")}
-          </p>
-        </motion.div>
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-4xl">
+          {/* Welcome Section */}
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
+              {t("hero.title")}
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              {t("hero.description")}
+            </p>
+          </motion.div>
 
         {/* Status Card */}
         <motion.div
@@ -539,6 +540,7 @@ export default function RealtimeVoicePage() {
             </div>
           </motion.div>
         )}
+        </div>
       </div>
 
       {/* Settings Panel */}
@@ -723,8 +725,8 @@ export default function RealtimeVoicePage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 py-4 px-6 border-t border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto text-center text-sm text-muted-foreground">
+      <footer className="flex-shrink-0 border-t border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto py-4 px-6 text-center text-sm text-muted-foreground">
           {t("footer.poweredBy")}
         </div>
       </footer>
