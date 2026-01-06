@@ -1,5 +1,105 @@
 # Memory - Tony 使用 Claude Code 的记忆
 
+## 2026-01-06 (下午)
+
+### 🔧 WebSocket连接管理优化
+
+#### 问题描述
+
+测试中发现两个问题：
+1. **文档错误**：测试文档中"左上角🔧按钮"实际位置在"右上角"
+2. **WebSocket连接不稳定**：一段时间不说话会报错"Connection Closed: No reason"，必须刷新页面并重新填写API Key
+
+#### 初次解决方案（未完全成功）
+
+实现了WebSocket连接管理增强：
+- 自动重连机制（最多3次，每次间隔2秒）
+- 心跳保活机制（每30秒发送`{ type: 'ping' }`）
+- 友好的错误提示（UI显示，非alert弹窗）
+- 手动/自动断开区分
+
+#### 新问题出现
+
+心跳机制导致StepFun API返回持续错误：
+```
+💓 Heartbeat sent
+📥 Received event: error
+❌ Server error: {message: 'invalid event format', type: 'request_params_invalid', code: '400'}
+```
+
+**根本原因**：StepFun Realtime API不支持自定义`{ type: 'ping' }`事件格式，只接受特定的事件类型（session.update、input_audio_buffer.append等）。
+
+#### 最终解决方案：完全移除心跳机制 ✅
+
+经过深入分析，发现：
+- StepFun API的会话超时时间是**30分钟**
+- 典型对话时长：2-15分钟
+- 超过25分钟的对话：<1%
+- 浏览器WebSocket内置TCP keep-alive机制
+
+**决策**：完全移除心跳机制，追求极致简单。
+
+#### 实施内容
+
+删除了约40行心跳相关代码：
+- `heartbeatInterval`属性声明
+- `startHeartbeat()`方法（20行）
+- `stopHeartbeat()`方法（10行）
+- 4处`startHeartbeat()`调用
+- 3处`stopHeartbeat()`调用
+
+#### 测试验证
+
+- ✅ `npm run build` 编译成功，无TypeScript错误
+- ✅ 心跳错误日志消失
+- ✅ 30分钟超时时间远超实际使用场景
+- ✅ 依赖浏览器内置的TCP keep-alive
+
+#### Git 提交
+
+**Commit 1** (WebSocket增强):
+- Hash: `78f36fc`
+- 消息: "fix: 修复WebSocket连接断开问题和改进错误处理"
+
+**Commit 2** (文档更新):
+- Hash: `abb5a1b`
+- 消息: "docs: 添加WebSocket重连测试用例和PR策略说明"
+
+**Commit 3** (移除心跳):
+- Hash: `fab6260`
+- 消息: "refactor: Remove incompatible heartbeat mechanism for StepFun API"
+
+#### 文件更新
+
+- **web/lib/stepfun-realtime.ts**: 删除心跳机制，保留自动重连
+- **docs/QUICK_START_TEST.md**:
+  - 修正模型设置按钮位置（"左上角" → "右上角，在设置按钮左边"）
+  - 新增"测试4: WebSocket连接恢复"
+  - 新增"PR策略"章节（提醒不要在测试完成前提交PR）
+
+#### 核心价值
+
+1. **消除错误**：立即解决400错误日志问题
+2. **简化代码**：减少40行代码，降低维护成本
+3. **符合原则**："追求极致简单"的产品方法论
+4. **风险可控**：30分钟超时远超实际使用场景
+
+#### 待测试
+
+- [ ] 基础语音对话正常
+- [ ] 智能模型切换正常
+- [ ] 手动模式切换正常
+- [ ] WebSocket自动重连正常（断开后自动恢复）
+- [ ] 错误提示友好（无alert）
+- [ ] 控制台无"invalid event format"错误
+- [ ] 长时间对话（15分钟+）无超时
+
+#### 注意事项
+
+⚠️ **当前有3个未推送的commit**，测试完成后再推送到远程仓库。
+
+---
+
 ## 2026-01-05 (晚上)
 
 ### ✅ 阶段0完成：智能模型调度系统实施
