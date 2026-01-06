@@ -183,8 +183,12 @@ export class StepFunRealtimeClient {
 
     switch (event.type) {
       case 'session.created':
+        console.log('✅ Session created:', event.session?.model);
+        break;
+
       case 'session.updated':
-        console.log('✅ Session event:', event);
+        console.log('✅ Session updated:', event.session?.model);
+        console.log('📋 Full session object:', JSON.stringify(event.session, null, 2));
         break;
 
       case 'input_audio_buffer.speech_started':
@@ -273,12 +277,21 @@ export class StepFunRealtimeClient {
    * 设置用户查询文本（用于模型选择）
    */
   setUserQuery(query: string) {
+    console.log('🎯 setUserQuery called:', query);
     this.lastUserQuery = query;
     this.conversationTurns++;
 
+    console.log('📊 Model selection config:', {
+      enableModelSelection: this.config.enableModelSelection,
+      preferredModel: this.config.preferredModel,
+    });
+
     // 如果启用了智能调度，选择模型
     if (this.config.enableModelSelection && !this.config.preferredModel) {
+      console.log('🔄 Triggering model selection...');
       this.selectAndSwitchModel();
+    } else {
+      console.log('⏭️ Model selection skipped (disabled or preferred model set)');
     }
   }
 
