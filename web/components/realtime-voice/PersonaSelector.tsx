@@ -1,13 +1,14 @@
 /**
- * 历史人设选择器组件
+ * 历史人设选择器组件 - 与主页风格统一版
  *
- * 允许用户选择不同的历史对话人设
+ * 美学方向: 暖色纸张风格 + 优雅橙色调
+ * 设计理念: 简洁优雅，与主页完美融合
  */
 
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   getPersona,
   getAllPersonas,
@@ -27,7 +28,6 @@ export function PersonaSelector({
 }: PersonaSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const personas = getAllPersonas();
-
   const currentPersonaData = getPersona(currentPersona);
 
   const handlePersonaSelect = (personaType: PersonaType) => {
@@ -36,34 +36,26 @@ export function PersonaSelector({
     setIsOpen(false);
   };
 
-  // 获取人设颜色样式
-  const getColorClasses = (color: string) => {
-    const colorMap = {
-      amber: 'from-amber-500/20 to-amber-600/10 border-amber-500/50',
-      blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/50',
-      purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/50',
-    };
-    return colorMap[color as keyof typeof colorMap] || colorMap.amber;
-  };
-
   return (
     <>
-      {/* 人设指示器按钮 */}
-      <button
+      {/* 人设指示器按钮 - 简洁优雅风格 */}
+      <motion.button
         onClick={() => setIsOpen(true)}
         disabled={disabled}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+        whileHover={{ scale: disabled ? 1 : 1.02 }}
+        whileTap={{ scale: disabled ? 1 : 0.98 }}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-smooth ${
           disabled
-            ? 'opacity-50 cursor-not-allowed border-white/10 bg-white/5'
-            : 'border-white/20 bg-white/10 hover:bg-white/20'
+            ? 'opacity-50 cursor-not-allowed bg-muted'
+            : 'bg-card hover:bg-muted border border-border/50'
         }`}
         title="切换历史人设"
       >
-        <span className="text-lg">{currentPersonaData.icon}</span>
-        <span className="text-sm text-white/80">{currentPersonaData.name}</span>
+        <span className="text-2xl">{currentPersonaData.icon}</span>
+        <span className="text-sm font-medium">{currentPersonaData.name}</span>
         {!disabled && (
           <svg
-            className="w-4 h-4 text-white/60"
+            className="w-4 h-4 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -76,99 +68,137 @@ export function PersonaSelector({
             />
           </svg>
         )}
-      </button>
+      </motion.button>
 
-      {/* 人设选择面板 */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={() => setIsOpen(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 border border-white/10 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 标题 */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">选择历史人设</h2>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-white/60 hover:text-white transition-colors"
+      {/* 人设选择面板 - 完美居中显示 */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* 背景遮罩 */}
+            <motion.div
+              className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* 面板容器 - 使用 flexbox 居中，支持滚动 */}
+            <motion.div
+              className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <motion.div
+                className="w-full max-w-2xl pointer-events-auto"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* 人设列表 */}
-            <div className="space-y-3">
-              {personas.map((persona) => {
-                const isSelected = persona.id === currentPersona;
-                const colorClasses = getColorClasses(persona.color);
-
-                return (
+                <div className="card-elevated max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden">
+                  <div className="p-6">
+                {/* 标题栏 */}
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold">选择历史人设</h3>
                   <button
-                    key={persona.id}
-                    onClick={() => handlePersonaSelect(persona.id)}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
-                      isSelected
-                        ? `bg-gradient-to-r ${colorClasses} ring-2 ring-white/20`
-                        : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
-                    }`}
+                    onClick={() => setIsOpen(false)}
+                    className="p-1 rounded hover:bg-muted transition-smooth"
                   >
-                    <div className="flex items-start gap-3">
-                      {/* 图标 */}
-                      <div className="text-3xl">{persona.icon}</div>
+                    <svg
+                      className="w-5 h-5 text-muted-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
 
-                      {/* 内容 */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-white font-semibold">{persona.name}</h3>
-                          {isSelected && (
-                            <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
-                              当前
-                            </span>
-                          )}
+                {/* 人设卡片网格 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {personas.map((persona, index) => {
+                    const isSelected = persona.id === currentPersona;
+
+                    return (
+                      <motion.button
+                        key={persona.id}
+                        onClick={() => handlePersonaSelect(persona.id)}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`
+                          relative p-4 rounded-lg border-2 transition-smooth text-left
+                          ${isSelected
+                            ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20'
+                            : 'border-border bg-card hover:border-primary/50 hover:bg-muted'
+                          }
+                        `}
+                      >
+                        {/* 图标 */}
+                        <div className={`
+                          text-4xl mb-3 text-center
+                          ${isSelected ? 'scale-110' : ''}
+                          transition-transform
+                        `}>
+                          {persona.icon}
                         </div>
-                        <p className="text-sm text-white/70 mb-2">
+
+                        {/* 名称 */}
+                        <h4 className="text-base font-semibold text-center mb-2">
+                          {persona.name}
+                        </h4>
+
+                        {/* 描述 */}
+                        <p className="text-sm text-muted-foreground text-center mb-3 line-clamp-2">
                           {persona.description}
                         </p>
 
-                        {/* 示例对话 */}
-                        <div className="bg-black/30 rounded p-2 text-xs text-white/50">
-                          <span className="text-white/60">示例：</span>
-                          {persona.examples[0]}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                        {/* 选中指示器 */}
+                        {isSelected && (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-xs font-medium text-primary">当前使用</span>
+                          </div>
+                        )}
 
-            {/* 提示信息 */}
-            <div className="mt-6 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <p className="text-sm text-blue-300">
-                💡 提示：不同人设会带来不同的对话体验，可以根据兴趣随时切换
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      )}
+                        {/* 示例对话 - 悬停显示 */}
+                        {!isSelected && (
+                          <div className="pt-3 mt-3 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-xs text-muted-foreground italic text-center">
+                              "{persona.examples[0]}"
+                            </p>
+                          </div>
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* 底部提示 */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground text-center">
+                    <span className="font-medium text-foreground">💡 不同人设，不同视角</span>
+                    <br />
+                    切换人设可获得全新的历史学习体验
+                  </p>
+                </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
