@@ -46,7 +46,6 @@ export class StepFunRealtimeClient {
   private maxReconnectAttempts: number = 3;
   private reconnectDelay: number = 2000; // 2秒
   private isManualDisconnect: boolean = false;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor(config: StepFunConfig) {
     this.config = {
@@ -111,9 +110,6 @@ export class StepFunRealtimeClient {
           // 连接成功后创建会话
           this.sendSessionUpdate();
           resolve();
-
-          // 启动心跳保活
-          this.startHeartbeat();
         };
 
         this.ws.onmessage = async (event) => {
@@ -134,9 +130,6 @@ export class StepFunRealtimeClient {
 
         this.ws.onclose = (event) => {
           console.log('🔌 WebSocket closed:', event.code, event.reason);
-
-          // 停止心跳
-          this.stopHeartbeat();
 
           // 如果不是手动断开，尝试重连
           if (!this.isManualDisconnect && event.code !== 1000) {
@@ -428,7 +421,6 @@ export class StepFunRealtimeClient {
           this.reconnectAttempts = 0;
           onStateChange('idle');
           this.sendSessionUpdate();
-          this.startHeartbeat();
         };
 
         this.ws.onmessage = async (event) => {
@@ -448,7 +440,6 @@ export class StepFunRealtimeClient {
 
         this.ws.onclose = (event) => {
           console.log('🔌 Reconnection closed:', event.code, event.reason);
-          this.stopHeartbeat();
 
           if (!this.isManualDisconnect && event.code !== 1000) {
             this.attemptReconnect(onStateChange, onTranscript, onAudio, onError);
@@ -463,39 +454,8 @@ export class StepFunRealtimeClient {
     }, this.reconnectDelay);
   }
 
-  /**
-   * 启动心跳保活（每30秒发送一个空消息）
-   */
-  private startHeartbeat() {
-    this.stopHeartbeat(); // 先清除旧的定时器
-
-    this.heartbeatInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        // 发送一个keep-alive消息
-        try {
-          this.ws.send(JSON.stringify({ type: 'ping' }));
-          console.log('💓 Heartbeat sent');
-        } catch (error) {
-          console.error('Failed to send heartbeat:', error);
-        }
-      }
-    }, 30000); // 每30秒
-  }
-
-  /**
-   * 停止心跳
-   */
-  private stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-      console.log('💔 Heartbeat stopped');
-    }
-  }
-
   disconnect() {
     this.isManualDisconnect = true; // 标记为手动断开
-    this.stopHeartbeat(); // 停止心跳
 
     if (this.ws) {
       this.ws.close();
