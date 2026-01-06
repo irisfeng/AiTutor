@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Zap, Shield, Network, TrendingUp } from 'lucide-react';
+import { Settings, Zap, Shield, Network, TrendingUp, Sparkles } from 'lucide-react';
 
 type ModelMode = 'auto' | 'quality' | 'fast';
 
@@ -30,6 +30,13 @@ export function ModelSettings({
   const [mode, setMode] = useState<ModelMode>('auto');
   const [dataSaver, setDataSaver] = useState(false);
   const [latency, setLatency] = useState(networkLatency);
+
+  // 首次打开时设置标记
+  useEffect(() => {
+    if (isOpen && !localStorage.getItem('modelSettingsOpened')) {
+      localStorage.setItem('modelSettingsOpened', 'true');
+    }
+  }, [isOpen]);
 
   // 更新延迟显示
   useEffect(() => {
@@ -63,10 +70,14 @@ export function ModelSettings({
       {/* 设置按钮 */}
       <button
         onClick={() => setIsOpen(true)}
-        className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card hover:bg-muted border border-border/50 transition-smooth"
         title="模型设置"
       >
-        <Settings className="w-5 h-5 text-white/80" />
+        <Sparkles className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium">
+          {mode === 'quality' ? '高质量' : mode === 'fast' ? '快速' : '自动'}
+        </span>
+        <Settings className="w-4 h-4 text-muted-foreground" />
       </button>
 
       {/* 设置面板 */}
@@ -105,15 +116,19 @@ export function ModelSettings({
               </button>
             </div>
 
+            {/* 首次使用提示 */}
+            {!localStorage.getItem('modelSettingsOpened') && (
+              <div className="mb-4 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                <p className="text-xs text-cyan-200">
+                  💡 提示：首次使用建议选择"自动模式"，开始对话后仍可随时调整
+                </p>
+              </div>
+            )}
+
             {/* 当前模型信息 */}
             <div className="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
               <div className="text-sm text-white/60 mb-1">当前使用</div>
               <div className="text-lg font-semibold text-white">{currentModel}</div>
-              {complexityScore !== undefined && (
-                <div className="mt-2 text-sm text-white/80">
-                  复杂度分数: {complexityScore}/100
-                </div>
-              )}
             </div>
 
             {/* 模型选择模式 */}
@@ -249,7 +264,7 @@ export function ModelSettings({
             {/* 提示信息 */}
             <div className="mt-6 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
               <p className="text-xs text-cyan-200">
-                💡 智能调度可以节省约 30% 的成本，同时保证良好的对话体验
+                💡 自动模式可节省约 30% 的成本，同时保证良好的对话体验
               </p>
             </div>
           </div>
