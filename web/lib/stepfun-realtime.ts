@@ -179,7 +179,10 @@ export class StepFunRealtimeClient {
   }
 
   private async handleEvent(event: any) {
-    console.log('📥 Received event:', event.type);
+    // 只对关键事件打印日志，避免流式事件刷屏
+    if (!event.type.includes('.delta')) {
+      console.log('📥 Received event:', event.type);
+    }
 
     switch (event.type) {
       case 'session.created':
@@ -302,11 +305,19 @@ export class StepFunRealtimeClient {
     const context = this.buildSelectionContext();
     const result = this.modelSelector.selectModel(context);
 
+    console.log('🎲 Model selection result:', {
+      selected: result.selectedModel,
+      current: this.currentModel,
+      complexity: result.complexityScore,
+      reason: result.reason,
+    });
+
     this.selectedModelInfo = result;
 
     // 如果选择的模型与当前不同，需要重新创建会话
     if (result.selectedModel !== this.currentModel) {
       console.log('🔄 模型切换:', result.reason);
+      console.log(`   从 ${this.currentModel} 切换到 ${result.selectedModel}`);
       this.currentModel = result.selectedModel;
 
       // 重新创建会话
