@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 import { VoiceState, ConversationTurn } from "@/types/voice";
 import { ModelSettings } from "@/components/realtime-voice/ModelSettings";
+import { PersonaSelector } from "@/components/realtime-voice/PersonaSelector";
+import { type PersonaType } from "@/lib/prompts/personas";
 import "@/lib/i18n";
 
 export default function RealtimeVoicePage() {
@@ -19,7 +21,10 @@ export default function RealtimeVoicePage() {
   const [currentTurn, setCurrentTurn] = useState<Partial<ConversationTurn>>({});
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>(""); // 新增：错误信息
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // 历史人设配置
+  const [currentPersona, setCurrentPersona] = useState<PersonaType>('storyteller');
 
   // 智能调度配置
   const [modelMode, setModelMode] = useState<'auto' | 'quality' | 'fast'>('auto');
@@ -58,6 +63,8 @@ export default function RealtimeVoicePage() {
         enableModelSelection: modelMode === 'auto',
         dataSaver,
         preferredModel,
+        persona: currentPersona, // 添加历史人设
+        userLanguage: language as 'zh' | 'en', // 添加语言设置
       });
 
       await client.connect(
@@ -132,7 +139,15 @@ export default function RealtimeVoicePage() {
       alert(t("alerts.connectionFailed"));
       setVoiceState("idle");
     }
-  }, [apiKey, language, isAiResponding, currentTurn, t, modelMode, dataSaver]);
+  }, [apiKey, language, isAiResponding, currentTurn, t, modelMode, dataSaver, currentPersona]);
+
+  // 切换历史人设
+  const handlePersonaChange = useCallback((newPersona: PersonaType) => {
+    setCurrentPersona(newPersona);
+    if (clientRef.current) {
+      clientRef.current.updatePersona(newPersona);
+    }
+  }, []);
 
   // 开始录音
   const startRecording = async () => {
@@ -278,6 +293,12 @@ export default function RealtimeVoicePage() {
           </motion.div>
 
           <div className="flex items-center gap-2">
+            {/* 人设选择器 */}
+            <PersonaSelector
+              currentPersona={currentPersona}
+              onPersonaChange={handlePersonaChange}
+            />
+
             {/* 模型设置按钮 */}
             <ModelSettings
               onModeChange={setModelMode}

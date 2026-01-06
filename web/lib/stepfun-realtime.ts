@@ -7,6 +7,7 @@ import {
   DevicePerformanceDetector,
 } from './model-selector';
 import { getModelAnalytics, ModelUsageRecord } from './model-analytics';
+import { type PersonaType, getPersonaInstructions } from './prompts/personas';
 
 export interface StepFunConfig {
   apiKey: string;
@@ -17,6 +18,9 @@ export interface StepFunConfig {
   enableModelSelection?: boolean;
   dataSaver?: boolean;
   preferredModel?: 'step-audio-2' | 'step-audio-2-mini';
+  // 历史人设配置
+  persona?: PersonaType;
+  userLanguage?: 'zh' | 'en';
 }
 
 export class StepFunRealtimeClient {
@@ -47,6 +51,10 @@ export class StepFunRealtimeClient {
   private reconnectDelay: number = 2000; // 2秒
   private isManualDisconnect: boolean = false;
 
+  // 历史人设相关
+  private currentPersona: PersonaType = 'storyteller';
+  private userLanguage: 'zh' | 'en' = 'zh';
+
   constructor(config: StepFunConfig) {
     this.config = {
       model: 'step-audio-2-mini',
@@ -54,8 +62,18 @@ export class StepFunRealtimeClient {
       instructions: '你是由阶跃星辰提供的AI聊天助手，你擅长中文，英文，以及多种其他语言的对话。请简洁友好地回答，每次回答不超过50字。请使用默认女声与用户交流。',
       enableModelSelection: true, // 默认启用智能调度
       dataSaver: false,
+      persona: 'storyteller', // 默认使用说书人人设
+      userLanguage: 'zh', // 默认中文
       ...config,
     };
+
+    // 初始化人设和语言
+    if (this.config.persona) {
+      this.currentPersona = this.config.persona;
+    }
+    if (this.config.userLanguage) {
+      this.userLanguage = this.config.userLanguage;
+    }
 
     // 验证音色是否有效
     const validVoices = ['qingchunshaonv', 'wenrounansheng'];
@@ -155,12 +173,18 @@ export class StepFunRealtimeClient {
       return;
     }
 
+    // 使用人设提示词
+    const personaInstructions = getPersonaInstructions(
+      this.currentPersona,
+      this.userLanguage
+    );
+
     const sessionUpdate = {
       event_id: this.generateEventId(),
       type: 'session.update',
       session: {
         modalities: ['text', 'audio'],
-        instructions: this.config.instructions,
+        instructions: personaInstructions,
         voice: this.config.voice,
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
@@ -173,6 +197,7 @@ export class StepFunRealtimeClient {
 
     console.log('📤 Sending session update');
     console.log('   Model:', this.currentModel);
+    console.log('   Persona:', this.currentPersona);
     console.log('   Voice:', this.config.voice);
     this.ws.send(JSON.stringify(sessionUpdate));
     console.log('✅ Session update sent');
@@ -360,6 +385,35 @@ export class StepFunRealtimeClient {
     this.conversationTurns = 0;
     this.lastUserQuery = '';
     this.selectedModelInfo = null;
+  }
+
+  /**
+   * 切换历史人设
+   */
+  updatePersona(persona: PersonaType): void {
+    console.log(`🎭 切换人设: ${this.currentPersona} → ${persona}`);
+    this.currentPersona = persona;
+    this.config.persona = persona;
+
+    // 重新发送会话更新（应用新人设）
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.sendSessionUpdate();
+      console.log('✅ 人设已更新，新会话已创建');
+    }
+  }
+
+  /**
+   * 获取当前人设
+   */
+  getCurrentPersona(): PersonaType {
+    return this.currentPersona;
+  }
+
+  /**
+   * 获取当前语言
+   */
+  getUserLanguage(): 'zh' | 'en' {
+    return this.userLanguage;
   }
 
   /**
