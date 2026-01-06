@@ -22,6 +22,22 @@
     },
     "settings": {
       "title": "Settings",
+      "modelSelection": {
+        "title": "Select Conversation Model",
+        "subtitle": "Auto mode recommended",
+        "auto": {
+          "label": "Auto Mode (Recommended)",
+          "description": "Smart scheduling for optimal balance. Best for daily conversations."
+        },
+        "quality": {
+          "label": "Quality Mode",
+          "description": "Always use step-audio-2. Best for complex reasoning and analysis."
+        },
+        "fast": {
+          "label": "Fast Mode",
+          "description": "Always use step-audio-2-mini. Faster response, saves bandwidth."
+        }
+      },
       "apiKey": "StepFun API Key",
       "apiKeyPlaceholder": "sk-...",
       "apiKeyHelp": "Get your API Key at",

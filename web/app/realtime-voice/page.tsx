@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Mic2, Settings, Sparkles } from "lucide-react";
+import { BookOpen, Mic2, Settings, Sparkles, TrendingUp, Zap, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 import { VoiceState, ConversationTurn } from "@/types/voice";
@@ -29,7 +29,7 @@ export default function RealtimeVoicePage() {
   // 智能调度配置
   const [modelMode, setModelMode] = useState<'auto' | 'quality' | 'fast'>('auto');
   const [dataSaver, setDataSaver] = useState(false);
-  const [currentModel, setCurrentModel] = useState<string>('step-audio-2-mini');
+  const [currentModel, setCurrentModel] = useState<string>('step-audio-2');
   const [complexityScore, setComplexityScore] = useState<number | undefined>();
   const [networkLatency, setNetworkLatency] = useState<number>(0);
 
@@ -69,11 +69,21 @@ export default function RealtimeVoicePage() {
 
       await client.connect(
         (state) => {
+          const prevState = voiceState;
           setVoiceState(state);
+
+          // 检测打断：用户开始说话时，如果AI正在回答，则打断
+          if (state === "listening" && prevState === "speaking" && clientRef.current) {
+            console.log('🎤 检测到用户打断AI');
+            clientRef.current.interrupt();
+            setIsAiResponding(false);
+          }
+
           // 清除错误信息
           if (state === "idle") {
             setErrorMessage("");
           }
+
           if (state === "thinking" && !isAiResponding) {
             setIsAiResponding(true);
           } else if (state === "idle" && isAiResponding) {
@@ -559,6 +569,93 @@ export default function RealtimeVoicePage() {
                 </h3>
 
                 <div className="space-y-4 mb-6">
+                  {/* 模型选择 */}
+                  <div>
+                    <label className="block text-sm font-medium mb-3">
+                      选择对话模型
+                      <span className="text-muted-foreground ml-2">(推荐自动模式)</span>
+                    </label>
+                    <div className="space-y-2">
+                      {/* 自动模式 */}
+                      <label
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-smooth ${
+                          modelMode === 'auto'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="initialModelMode"
+                          checked={modelMode === 'auto'}
+                          onChange={() => setModelMode('auto')}
+                          className="mt-1 mr-3"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            <TrendingUp className="w-4 h-4 text-primary" />
+                            <span>自动模式（推荐）</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            智能调度，性能与成本平衡。日常对话首选。
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* 高质量模式 */}
+                      <label
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-smooth ${
+                          modelMode === 'quality'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="initialModelMode"
+                          checked={modelMode === 'quality'}
+                          onChange={() => setModelMode('quality')}
+                          className="mt-1 mr-3"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            <Zap className="w-4 h-4 text-purple-500" />
+                            <span>高质量模式</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            始终使用 step-audio-2。适合复杂推理和分析。
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* 快速模式 */}
+                      <label
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-smooth ${
+                          modelMode === 'fast'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="initialModelMode"
+                          checked={modelMode === 'fast'}
+                          onChange={() => setModelMode('fast')}
+                          className="mt-1 mr-3"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            <Shield className="w-4 h-4 text-blue-500" />
+                            <span>快速模式</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            始终使用 step-audio-2-mini。响应更快，节省流量。
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       {t("settings.apiKey")}
