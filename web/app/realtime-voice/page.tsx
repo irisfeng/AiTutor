@@ -557,13 +557,21 @@ export default function RealtimeVoicePage() {
             />
 
             <motion.div
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50 px-6"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="card-elevated p-6">
+              <motion.div
+                className="w-full max-w-md pointer-events-auto"
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <div className="card-elevated max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden">
+                  <div className="p-6">
                 <h3 className="text-xl font-semibold mb-6">
                   {t("settings.title")}
                 </h3>
@@ -709,7 +717,9 @@ export default function RealtimeVoicePage() {
                     {t("button.done")}
                   </button>
                 </div>
-              </div>
+                  </div>
+                </div>
+              </motion.div>
             </motion.div>
           </>
         )}

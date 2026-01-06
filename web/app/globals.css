@@ -210,6 +210,39 @@
     @apply bg-muted-foreground/50;
 }
 
+/* Smooth scrolling for modal content */
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) hsl(var(--muted) / 0.5);
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for Firefox */
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(35 20% 85% / 0.8) hsl(45 15% 90% / 0.5);
+}
+
+/* Enhanced scrollbar for settings modal */
+.card-elevated.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.card-elevated.overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+}
+
+.card-elevated.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: hsl(35 20% 70% / 0.4);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.card-elevated.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: hsl(35 20% 60% / 0.6);
+}
+
 /* Selection */
 ::selection {
     @apply bg-primary/20;
