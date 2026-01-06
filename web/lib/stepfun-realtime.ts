@@ -25,6 +25,7 @@ export class StepFunRealtimeClient {
   private onStateChange?: (state: VoiceState) => void;
   private onTranscript?: (text: string) => void;
   private onAudio?: (audioData: ArrayBuffer) => void;
+  private onError?: (error: string) => void; // 新增：错误回调
   private audioContext: AudioContext | null = null;
   private audioQueue: AudioBuffer[] = [];
   private isPlaying: boolean = false;
@@ -39,6 +40,13 @@ export class StepFunRealtimeClient {
   private lastUserQuery: string = '';
   private responseStartTime: number = 0;
   private selectedModelInfo: ModelSelectionResult | null = null;
+
+  // 连接管理相关
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 3;
+  private reconnectDelay: number = 2000; // 2秒
+  private isManualDisconnect: boolean = false;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor(config: StepFunConfig) {
     this.config = {
@@ -72,12 +80,15 @@ export class StepFunRealtimeClient {
   async connect(
     onStateChange: (state: VoiceState) => void,
     onTranscript: (text: string) => void,
-    onAudio: (audioData: ArrayBuffer) => void
+    onAudio: (audioData: ArrayBuffer) => void,
+    onError?: (error: string) => void // 新增：错误回调
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.onStateChange = onStateChange;
       this.onTranscript = onTranscript;
       this.onAudio = onAudio;
+      this.onError = onError; // 保存错误回调
+      this.isManualDisconnect = false; // 重置手动断开标志
 
       try {
         // 连接到本地代理服务器
@@ -94,11 +105,15 @@ export class StepFunRealtimeClient {
 
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected to proxy');
+          this.reconnectAttempts = 0; // 重置重连次数
           onStateChange('idle');
 
           // 连接成功后创建会话
           this.sendSessionUpdate();
           resolve();
+
+          // 启动心跳保活
+          this.startHeartbeat();
         };
 
         this.ws.onmessage = async (event) => {
@@ -113,16 +128,25 @@ export class StepFunRealtimeClient {
         this.ws.onerror = (error) => {
           console.error('❌ WebSocket error:', error);
           onStateChange('idle');
-          alert('连接失败，请检查 API Key 是否正确');
-          reject(error);
+          // 移除alert，使用回调通知
+          this.onError?.('连接失败，请检查网络或API Key');
         };
 
         this.ws.onclose = (event) => {
           console.log('🔌 WebSocket closed:', event.code, event.reason);
-          if (event.code !== 1000) {
+
+          // 停止心跳
+          this.stopHeartbeat();
+
+          // 如果不是手动断开，尝试重连
+          if (!this.isManualDisconnect && event.code !== 1000) {
             console.error('❌ Connection closed abnormally. Code:', event.code);
+            console.log(`🔄 Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+
+            this.attemptReconnect(onStateChange, onTranscript, onAudio, this.onError);
+          } else {
+            onStateChange('idle');
           }
-          onStateChange('idle');
         };
       } catch (error) {
         console.error('Failed to connect:', error);
@@ -206,7 +230,8 @@ export class StepFunRealtimeClient {
         console.error('❌ Server error:', event.error);
         this.onStateChange?.('idle');
         const errorMsg = event.error?.message || event.error?.type || '未知错误';
-        alert(`API 错误: ${errorMsg}`);
+        // 使用回调代替alert
+        this.onError?.(`API 错误: ${errorMsg}`);
         break;
 
       default:
@@ -369,7 +394,109 @@ export class StepFunRealtimeClient {
     this.ws.send(JSON.stringify(message));
   }
 
+  /**
+   * 尝试重连
+   */
+  private attemptReconnect(
+    onStateChange: (state: VoiceState) => void,
+    onTranscript: (text: string) => void,
+    onAudio: (audioData: ArrayBuffer) => void,
+    onError?: (error: string) => void
+  ) {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('❌ Max reconnection attempts reached');
+      onError?.('连接失败，请刷新页面重试');
+      onStateChange('idle');
+      return;
+    }
+
+    this.reconnectAttempts++;
+
+    setTimeout(async () => {
+      try {
+        console.log(`🔄 Reconnecting... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+
+        // 重新创建WebSocket连接
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        const wsUrl = `${protocol}//${host}/api/ws-proxy?apiKey=${encodeURIComponent(this.config.apiKey)}`;
+
+        this.ws = new WebSocket(wsUrl);
+
+        this.ws.onopen = () => {
+          console.log('✅ Reconnected successfully');
+          this.reconnectAttempts = 0;
+          onStateChange('idle');
+          this.sendSessionUpdate();
+          this.startHeartbeat();
+        };
+
+        this.ws.onmessage = async (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            await this.handleEvent(data);
+          } catch (error) {
+            console.error('Failed to parse message:', error);
+          }
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('❌ Reconnection error:', error);
+          onStateChange('idle');
+          onError?.('重连失败，请检查网络');
+        };
+
+        this.ws.onclose = (event) => {
+          console.log('🔌 Reconnection closed:', event.code, event.reason);
+          this.stopHeartbeat();
+
+          if (!this.isManualDisconnect && event.code !== 1000) {
+            this.attemptReconnect(onStateChange, onTranscript, onAudio, onError);
+          } else {
+            onStateChange('idle');
+          }
+        };
+      } catch (error) {
+        console.error('Failed to reconnect:', error);
+        this.attemptReconnect(onStateChange, onTranscript, onAudio, onError);
+      }
+    }, this.reconnectDelay);
+  }
+
+  /**
+   * 启动心跳保活（每30秒发送一个空消息）
+   */
+  private startHeartbeat() {
+    this.stopHeartbeat(); // 先清除旧的定时器
+
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        // 发送一个keep-alive消息
+        try {
+          this.ws.send(JSON.stringify({ type: 'ping' }));
+          console.log('💓 Heartbeat sent');
+        } catch (error) {
+          console.error('Failed to send heartbeat:', error);
+        }
+      }
+    }, 30000); // 每30秒
+  }
+
+  /**
+   * 停止心跳
+   */
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+      console.log('💔 Heartbeat stopped');
+    }
+  }
+
   disconnect() {
+    this.isManualDisconnect = true; // 标记为手动断开
+    this.stopHeartbeat(); // 停止心跳
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;

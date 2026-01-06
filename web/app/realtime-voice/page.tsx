@@ -19,6 +19,7 @@ export default function RealtimeVoicePage() {
   const [currentTurn, setCurrentTurn] = useState<Partial<ConversationTurn>>({});
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>(""); // 新增：错误信息
 
   // 智能调度配置
   const [modelMode, setModelMode] = useState<'auto' | 'quality' | 'fast'>('auto');
@@ -62,6 +63,10 @@ export default function RealtimeVoicePage() {
       await client.connect(
         (state) => {
           setVoiceState(state);
+          // 清除错误信息
+          if (state === "idle") {
+            setErrorMessage("");
+          }
           if (state === "thinking" && !isAiResponding) {
             setIsAiResponding(true);
           } else if (state === "idle" && isAiResponding) {
@@ -96,6 +101,14 @@ export default function RealtimeVoicePage() {
         async (audioData) => {
           await client.playAudio(audioData);
         },
+        // 新增：错误回调
+        (error) => {
+          setErrorMessage(error);
+          // 5秒后自动清除错误信息
+          setTimeout(() => {
+            setErrorMessage("");
+          }, 5000);
+        }
       );
 
       clientRef.current = client;
@@ -364,6 +377,59 @@ export default function RealtimeVoicePage() {
             </motion.button>
           </div>
         </motion.div>
+
+        {/* 错误提示 */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-5 h-5 text-red-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-red-200">{errorMessage}</p>
+                  <p className="text-xs text-red-300/70 mt-1">
+                    {errorMessage.includes("连接失败") || errorMessage.includes("重连失败")
+                      ? "提示：请检查网络连接或API Key是否正确"
+                      : "系统将自动尝试重连..."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage("")}
+                  className="flex-shrink-0 text-red-300 hover:text-red-200 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Current Conversation */}
         <AnimatePresence>
