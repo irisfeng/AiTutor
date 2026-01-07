@@ -86,7 +86,7 @@ export function PersonaSelector({
 
             {/* 面板容器 - 使用 flexbox 居中，支持滚动 */}
             <motion.div
-              className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
+              className="fixed inset-0 flex items-center justify-center z-50 p-6 pointer-events-none"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -99,7 +99,7 @@ export function PersonaSelector({
                 exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
               >
-                <div className="card-elevated max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden">
+                <div className="card-elevated max-h-[calc(100vh-3rem)] overflow-y-auto overflow-x-hidden">
                   <div className="p-6">
                 {/* 标题栏 */}
                 <div className="flex items-center justify-between mb-6">
