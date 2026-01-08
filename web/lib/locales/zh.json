@@ -2,7 +2,7 @@
   "translation": {
     "header": {
       "title": "AI Tutor",
-      "subtitle": "智能学习助手"
+      "subtitle": "智能学习助手（历史版）"
     },
     "hero": {
       "title": "开启学习之旅",
@@ -56,6 +56,9 @@
     "alerts": {
       "connectionFailed": "连接失败，请检查 API Key 是否正确",
       "microphoneAccess": "无法访问麦克风，请检查权限设置"
+    },
+    "toast": {
+      "modelSwitchPending": "新模型将在下次对话时应用"
     }
   }
 }

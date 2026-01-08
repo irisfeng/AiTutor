@@ -2,7 +2,7 @@
   "translation": {
     "header": {
       "title": "AI Tutor",
-      "subtitle": "Smart Learning Assistant"
+      "subtitle": "Smart Learning Assistant (History Edition)"
     },
     "hero": {
       "title": "Begin Your Learning Journey",
@@ -56,6 +56,9 @@
     "alerts": {
       "connectionFailed": "Connection failed, please check if API Key is correct",
       "microphoneAccess": "Cannot access microphone, please check permission settings"
+    },
+    "toast": {
+      "modelSwitchPending": "New model will be applied in next conversation"
     }
   }
 }

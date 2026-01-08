@@ -33,6 +33,10 @@ export default function RealtimeVoicePage() {
   const [complexityScore, setComplexityScore] = useState<number | undefined>();
   const [networkLatency, setNetworkLatency] = useState<number>(0);
 
+  // 新增：延迟模型切换（阶段1.5）
+  const [pendingModelMode, setPendingModelMode] = useState<'auto' | 'quality' | 'fast' | null>(null);
+  const [showModelSwitchToast, setShowModelSwitchToast] = useState(false);
+
   const clientRef = useRef<StepFunRealtimeClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -149,7 +153,8 @@ export default function RealtimeVoicePage() {
       alert(t("alerts.connectionFailed"));
       setVoiceState("idle");
     }
-  }, [apiKey, language, isAiResponding, currentTurn, t, modelMode, dataSaver, currentPersona]);
+  }, [apiKey, language, isAiResponding, currentTurn, t, dataSaver, currentPersona]);
+  // ✅ 移除 modelMode - 切换模型不会触发重连（阶段1.5延迟切换）
 
   // 切换历史人设
   const handlePersonaChange = useCallback((newPersona: PersonaType) => {
@@ -244,7 +249,33 @@ export default function RealtimeVoicePage() {
 
     setIsActive(false);
     setVoiceState("idle");
+
+    // ✅ 新增：应用待应用的模型模式（延迟切换）
+    if (pendingModelMode) {
+      console.log(`🔄 应用待应用的模型模式: ${pendingModelMode}`);
+      setModelMode(pendingModelMode);
+      setPendingModelMode(null); // 清空待应用模式
+    }
   };
+
+  // 处理模型模式切换（延迟生效）- 阶段1.5新增
+  const handleModelModeChange = useCallback((newMode: 'auto' | 'quality' | 'fast') => {
+    // 如果正在对话中
+    if (isActive || clientRef.current) {
+      // 记录待应用的模式
+      setPendingModelMode(newMode);
+
+      // 显示 Toast 提示
+      setShowModelSwitchToast(true);
+      setTimeout(() => setShowModelSwitchToast(false), 3000); // 3秒后自动消失
+
+      console.log(`📝 模式已切换: ${newMode} (将在下次对话时应用)`);
+    } else {
+      // 如果未连接，立即应用
+      setModelMode(newMode);
+      console.log(`✅ 模式已立即应用: ${newMode}`);
+    }
+  }, [isActive]);
 
   // 切换录音状态
   const toggleRecording = async () => {
@@ -466,6 +497,30 @@ export default function RealtimeVoicePage() {
           )}
         </AnimatePresence>
 
+        {/* Toast 提示：模型切换延迟生效 - 阶段1.5新增 */}
+        <AnimatePresence>
+          {showModelSwitchToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50"
+            >
+              <div className="card-elevated px-6 py-3 rounded-lg shadow-xl">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    {language === 'zh'
+                      ? '新模型将在下次对话时应用'
+                      : 'New model will be applied in next conversation'}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Current Conversation */}
         <AnimatePresence>
           {(currentTurn.userMessage || currentTurn.aiResponse) && (
@@ -595,7 +650,7 @@ export default function RealtimeVoicePage() {
                           type="radio"
                           name="initialModelMode"
                           checked={modelMode === 'auto'}
-                          onChange={() => setModelMode('auto')}
+                          onChange={() => handleModelModeChange('auto')}
                           className="mt-1 mr-3"
                         />
                         <div>
@@ -621,7 +676,7 @@ export default function RealtimeVoicePage() {
                           type="radio"
                           name="initialModelMode"
                           checked={modelMode === 'quality'}
-                          onChange={() => setModelMode('quality')}
+                          onChange={() => handleModelModeChange('quality')}
                           className="mt-1 mr-3"
                         />
                         <div>
@@ -647,7 +702,7 @@ export default function RealtimeVoicePage() {
                           type="radio"
                           name="initialModelMode"
                           checked={modelMode === 'fast'}
-                          onChange={() => setModelMode('fast')}
+                          onChange={() => handleModelModeChange('fast')}
                           className="mt-1 mr-3"
                         />
                         <div>
