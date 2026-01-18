@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Mic2, Settings, Sparkles, TrendingUp, Zap, Shield } from "lucide-react";
+import { BookOpen, Mic2, Settings, Sparkles, TrendingUp, Zap, Shield, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 import { VoiceState, ConversationTurn } from "@/types/voice";
 import { ModelSettings } from "@/components/realtime-voice/ModelSettings";
-import { PersonaSelector } from "@/components/realtime-voice/PersonaSelector";
-import { type PersonaType } from "@/lib/prompts/personas";
+// import { PersonaSelector } from "@/components/realtime-voice/PersonaSelector";
+// import { type PersonaType } from "@/lib/prompts/personas";
+import { saveConversations, loadConversations, clearConversations, saveSettings, loadSettings } from "@/lib/storage";
 import "@/lib/i18n";
 
 export default function RealtimeVoicePage() {
@@ -23,8 +24,8 @@ export default function RealtimeVoicePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  // 历史人设配置
-  const [currentPersona, setCurrentPersona] = useState<PersonaType>('storyteller');
+  // 历史人设配置 - 暂时禁用
+  // const [currentPersona, setCurrentPersona] = useState<PersonaType>('storyteller');
 
   // 智能调度配置
   const [modelMode, setModelMode] = useState<'auto' | 'quality' | 'fast'>('auto');
@@ -33,9 +34,17 @@ export default function RealtimeVoicePage() {
   const [complexityScore, setComplexityScore] = useState<number | undefined>();
   const [networkLatency, setNetworkLatency] = useState<number>(0);
 
+  // 加载设置时使用的 ref，避免 initClient 依赖循环
+  const settingsLoadedRef = useRef(false);
+
   // 新增：延迟模型切换（阶段1.5）
   const [pendingModelMode, setPendingModelMode] = useState<'auto' | 'quality' | 'fast' | null>(null);
   const [showModelSwitchToast, setShowModelSwitchToast] = useState(false);
+
+  // 知识卡片状态
+  const [showKnowledgePanel, setShowKnowledgePanel] = useState(false);
+  const [knowledgeCards, setKnowledgeCards] = useState<any[]>([]);
+  const [isGeneratingCards, setIsGeneratingCards] = useState(false);
 
   const clientRef = useRef<StepFunRealtimeClient | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -67,7 +76,7 @@ export default function RealtimeVoicePage() {
         enableModelSelection: modelMode === 'auto',
         dataSaver,
         preferredModel,
-        persona: currentPersona, // 添加历史人设
+        // persona: currentPersona, // 添加历史人设 - 暂时禁用
         userLanguage: language as 'zh' | 'en', // 添加语言设置
       });
 
@@ -97,15 +106,19 @@ export default function RealtimeVoicePage() {
                 clientRef.current.setUserQuery(currentTurn.userMessage);
               }
 
-              setConversations((prev) => [
-                ...prev,
-                {
-                  id: `turn-${Date.now()}`,
-                  timestamp: Date.now(),
-                  userMessage: currentTurn.userMessage,
-                  aiResponse: currentTurn.aiResponse,
-                } as ConversationTurn,
-              ]);
+              const newConversation: ConversationTurn = {
+                id: `turn-${Date.now()}`,
+                timestamp: Date.now(),
+                userMessage: currentTurn.userMessage,
+                aiResponse: currentTurn.aiResponse,
+              } as ConversationTurn;
+
+              setConversations((prev) => {
+                const updated = [...prev, newConversation];
+                // 保存到 localStorage
+                saveConversations(updated);
+                return updated;
+              });
             }
             setCurrentTurn({});
             setIsAiResponding(false);
@@ -153,16 +166,17 @@ export default function RealtimeVoicePage() {
       alert(t("alerts.connectionFailed"));
       setVoiceState("idle");
     }
-  }, [apiKey, language, isAiResponding, currentTurn, t, dataSaver, currentPersona]);
-  // ✅ 移除 modelMode - 切换模型不会触发重连（阶段1.5延迟切换）
+  }, [apiKey, language, t, dataSaver, /* currentPersona, */ modelMode]);
+  // ✅ 移除 isAiResponding 和 currentTurn - 避免频繁重新创建导致重渲染
+  // ✅ 添加 modelMode - 确保模型切换时正确初始化
 
-  // 切换历史人设
-  const handlePersonaChange = useCallback((newPersona: PersonaType) => {
-    setCurrentPersona(newPersona);
-    if (clientRef.current) {
-      clientRef.current.updatePersona(newPersona);
-    }
-  }, []);
+  // 切换历史人设 - 暂时禁用
+  // const handlePersonaChange = useCallback((newPersona: PersonaType) => {
+  //   setCurrentPersona(newPersona);
+  //   if (clientRef.current) {
+  //     clientRef.current.updatePersona(newPersona);
+  //   }
+  // }, []);
 
   // 开始录音
   const startRecording = async () => {
@@ -292,6 +306,112 @@ export default function RealtimeVoicePage() {
     i18n.changeLanguage(lang);
   };
 
+  // 从 localStorage 加载对话记录和设置
+  useEffect(() => {
+    // 只在首次加载时执行
+    if (settingsLoadedRef.current) return;
+    settingsLoadedRef.current = true;
+
+    // 加载对话记录
+    const savedConversations = loadConversations();
+    if (savedConversations.length > 0) {
+      setConversations(savedConversations);
+    }
+
+    // 加载设置
+    const settings = loadSettings();
+    if (settings.apiKey) {
+      setApiKey(settings.apiKey);
+    }
+    if (settings.language) {
+      setLanguage(settings.language);
+      // 使用 setTimeout 避免 i18n.changeLanguage 触发额外的渲染
+      setTimeout(() => i18n.changeLanguage(settings.language), 0);
+    }
+    if (settings.modelMode) {
+      setModelMode(settings.modelMode);
+    }
+    // if (settings.persona) {
+    //   setCurrentPersona(settings.persona as PersonaType);
+    // }
+  }, []); // ✅ 移除 i18n 依赖，只在组件挂载时执行一次
+
+  // 自动保存设置到 localStorage
+  useEffect(() => {
+    if (!settingsLoadedRef.current) return;
+
+    saveSettings({
+      apiKey,
+      language,
+      modelMode,
+      // persona: currentPersona, // 暂时禁用
+    });
+  }, [apiKey, language, modelMode, /* currentPersona */]);
+
+  // 清除所有对话记录
+  const handleClearConversations = () => {
+    if (window.confirm('确定要清除所有对话记录吗？此操作不可恢复。')) {
+      clearConversations();
+      setConversations([]);
+    }
+  };
+
+  // 生成知识卡片
+  const handleGenerateKnowledgeCards = async () => {
+    if (conversations.length === 0) return;
+
+    setIsGeneratingCards(true);
+    setShowKnowledgePanel(true);
+
+    try {
+      // 提取对话内容
+      const conversationText = conversations
+        .map((conv, index) => {
+          return `Q${index + 1}: ${conv.userMessage}\nA${index + 1}: ${conv.aiResponse}`;
+        })
+        .join('\n\n');
+
+      // 调用 StepFun API 生成知识卡片
+      const response = await fetch('https://api.stepfun.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'step-1v-8k', // 使用适合文本生成的模型
+          messages: [
+            {
+              role: 'system',
+              content: '你是一个知识提炼专家。请根据用户的对话内容，生成3-5张知识卡片。每张卡片包含：标题（简短精炼）、图标（emoji）、内容（100字以内的知识点或总结）、标签（2-3个相关标签）。请以JSON数组格式返回，格式：[{"icon": "📌", "title": "标题", "content": "内容", "tags": ["标签1", "标签2"]}]。只返回JSON，不要有其他内容。'
+            },
+            {
+              role: 'user',
+              content: `请根据以下对话内容生成知识卡片：\n\n${conversationText}`
+            }
+          ],
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('生成知识卡片失败');
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+
+      // 解析JSON响应
+      const cards = JSON.parse(content);
+      setKnowledgeCards(cards);
+    } catch (error) {
+      console.error('生成知识卡片失败:', error);
+      alert('生成知识卡片失败，请重试');
+    } finally {
+      setIsGeneratingCards(false);
+    }
+  };
+
   // 清理
   useEffect(() => {
     return () => {
@@ -334,11 +454,11 @@ export default function RealtimeVoicePage() {
           </motion.div>
 
           <div className="flex items-center gap-2">
-            {/* 人设选择器 */}
-            <PersonaSelector
+            {/* 人设选择器 - 暂时禁用 */}
+            {/* <PersonaSelector
               currentPersona={currentPersona}
               onPersonaChange={handlePersonaChange}
-            />
+            /> */}
 
             {/* 模型指示器 */}
             <ModelSettings
@@ -367,7 +487,7 @@ export default function RealtimeVoicePage() {
         <div className="w-full max-w-4xl">
           {/* Welcome Section */}
           <motion.div
-            className="text-center mb-12"
+            className="text-center mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -379,6 +499,7 @@ export default function RealtimeVoicePage() {
               {t("hero.description")}
             </p>
           </motion.div>
+
 
         {/* Status Card */}
         <motion.div
@@ -562,9 +683,31 @@ export default function RealtimeVoicePage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h3 className="text-lg font-semibold mb-4 text-muted-foreground">
-              {t("conversation.history")}
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-muted-foreground">
+                {t("conversation.history")}
+                <span className="ml-2 text-sm font-normal">
+                  ({conversations.length} 条对话)
+                </span>
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleGenerateKnowledgeCards}
+                  disabled={isGeneratingCards}
+                  className="flex items-center gap-2 px-4 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg rounded-lg transition-smooth disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isGeneratingCards ? '生成中...' : '生成知识卡片'}
+                </button>
+                <button
+                  onClick={handleClearConversations}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-smooth"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  清除记录
+                </button>
+              </div>
+            </div>
             <div className="space-y-4">
               {conversations.map((conv, index) => (
                 <motion.div
@@ -776,6 +919,115 @@ export default function RealtimeVoicePage() {
               </motion.div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* ===== 知识卡片面板 ===== */}
+      <AnimatePresence>
+        {showKnowledgePanel && (
+          <motion.div
+            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowKnowledgePanel(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showKnowledgePanel && (
+          <motion.div
+            className="fixed inset-0 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="card-elevated">
+                {/* 头部 */}
+                <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border/50 px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold">📚 知识卡片</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {isGeneratingCards ? '正在生成中...' : `已生成 ${knowledgeCards.length} 张卡片`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowKnowledgePanel(false)}
+                    className="p-2 rounded-lg hover:bg-muted transition-smooth"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* 内容区 */}
+                <div className="p-6">
+                  {isGeneratingCards ? (
+                    <div className="text-center py-12">
+                      <motion.div
+                        className="inline-block"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+                      </motion.div>
+                      <p className="text-muted-foreground">正在分析对话内容并生成知识卡片...</p>
+                    </div>
+                  ) : knowledgeCards.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-4xl mb-2">💡</div>
+                      <p className="text-muted-foreground">还没有知识卡片</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        与AI对话后，点击下方"生成知识卡片"按钮
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-6">
+                      {knowledgeCards.map((card, index) => (
+                        <motion.div
+                          key={index}
+                          className="bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20 rounded-xl p-6"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="text-3xl">{card.icon}</div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg mb-2">{card.title}</h4>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {card.content}
+                              </p>
+                              {card.tags && (
+                                <div className="flex gap-2 mt-3">
+                                  {card.tags.map((tag: string, tagIndex: number) => (
+                                    <span
+                                      key={tagIndex}
+                                      className="px-2 py-1 text-xs bg-primary/10 text-primary rounded-full"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 

@@ -7,7 +7,7 @@ import {
   DevicePerformanceDetector,
 } from './model-selector';
 import { getModelAnalytics, ModelUsageRecord } from './model-analytics';
-import { type PersonaType, getPersonaInstructions } from './prompts/personas';
+import { type SubjectType, getPersonaInstructions } from './prompts/personas';
 
 export interface StepFunConfig {
   apiKey: string;
@@ -18,8 +18,8 @@ export interface StepFunConfig {
   enableModelSelection?: boolean;
   dataSaver?: boolean;
   preferredModel?: 'step-audio-2' | 'step-audio-2-mini';
-  // 历史人设配置
-  persona?: PersonaType;
+  // 学科配置
+  subject?: SubjectType;
   userLanguage?: 'zh' | 'en';
 }
 
@@ -28,6 +28,7 @@ export class StepFunRealtimeClient {
   private config: StepFunConfig;
   private onStateChange?: (state: VoiceState) => void;
   private onTranscript?: (text: string) => void;
+  private onUserTranscript?: (text: string) => void; // 新增：用户转写文本回调
   private onAudio?: (audioData: ArrayBuffer) => void;
   private onError?: (error: string) => void; // 新增：错误回调
   private audioContext: AudioContext | null = null;
@@ -40,7 +41,7 @@ export class StepFunRealtimeClient {
   private latencyMeasurer: NetworkLatencyMeasurer;
   private performanceDetector: DevicePerformanceDetector;
   private conversationTurns: number = 0;
-  private currentModel: 'step-audio-2' | 'step-audio-2-mini' = 'step-audio-2-mini';
+  private currentModel: 'step-audio-2' | 'step-audio-2-mini' = 'step-audio-2';
   private lastUserQuery: string = '';
   private responseStartTime: number = 0;
   private selectedModelInfo: ModelSelectionResult | null = null;
@@ -51,25 +52,28 @@ export class StepFunRealtimeClient {
   private reconnectDelay: number = 2000; // 2秒
   private isManualDisconnect: boolean = false;
 
-  // 历史人设相关
-  private currentPersona: PersonaType = 'storyteller';
+  // 学科相关
+  private currentSubject: SubjectType = 'history';
   private userLanguage: 'zh' | 'en' = 'zh';
+
+  // 打断检测相关
+  private isAiResponding: boolean = false; // AI是否正在生成或播放响应
 
   constructor(config: StepFunConfig) {
     this.config = {
-      model: 'step-audio-2-mini',
+      model: 'step-audio-2',
       voice: 'qingchunshaonv',
       instructions: '你是由阶跃星辰提供的AI聊天助手，你擅长中文，英文，以及多种其他语言的对话。请简洁友好地回答，每次回答不超过50字。请使用默认女声与用户交流。',
       enableModelSelection: true, // 默认启用智能调度
       dataSaver: false,
-      persona: 'storyteller', // 默认使用说书人人设
+      subject: 'history', // 默认使用历史学科
       userLanguage: 'zh', // 默认中文
       ...config,
     };
 
-    // 初始化人设和语言
-    if (this.config.persona) {
-      this.currentPersona = this.config.persona;
+    // 初始化学科和语言
+    if (this.config.subject) {
+      this.currentSubject = this.config.subject;
     }
     if (this.config.userLanguage) {
       this.userLanguage = this.config.userLanguage;
@@ -98,23 +102,26 @@ export class StepFunRealtimeClient {
     onStateChange: (state: VoiceState) => void,
     onTranscript: (text: string) => void,
     onAudio: (audioData: ArrayBuffer) => void,
-    onError?: (error: string) => void // 新增：错误回调
+    onError?: (error: string) => void, // 错误回调
+    onUserTranscript?: (text: string) => void // 新增：用户转写文本回调
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       this.onStateChange = onStateChange;
       this.onTranscript = onTranscript;
+      this.onUserTranscript = onUserTranscript; // 保存用户转写回调
       this.onAudio = onAudio;
       this.onError = onError; // 保存错误回调
       this.isManualDisconnect = false; // 重置手动断开标志
 
       try {
-        // 连接到本地代理服务器
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/api/ws-proxy?apiKey=${encodeURIComponent(this.config.apiKey)}`;
+        // 连接到独立的 WebSocket 代理服务器（端口 3004）
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = 'localhost:3004'; // 独立的 WebSocket 代理服务器
+        // 🔑 在 URL 中添加模型参数
+        const wsUrl = `${wsProtocol}//${wsHost}/ws-proxy?model=${this.currentModel}&apiKey=${encodeURIComponent(this.config.apiKey)}`;
 
-        console.log('Connecting to proxy:', wsUrl.replace(/apiKey=[^&]+/, 'apiKey=***'));
-        console.log('Model (via URL): step-audio-2-mini');
+        console.log('Connecting to WebSocket proxy:', wsUrl.replace(/apiKey=[^&]+/, 'apiKey=***'));
+        console.log('Model (via URL):', this.currentModel);
         console.log('Using voice:', this.config.voice);
 
         this.ws = new WebSocket(wsUrl);
@@ -173,10 +180,9 @@ export class StepFunRealtimeClient {
       return;
     }
 
-    // 使用人设提示词
-    const personaInstructions = getPersonaInstructions(
-      this.currentPersona,
-      this.userLanguage
+    // 使用学科提示词
+    const subjectInstructions = getPersonaInstructions(
+      this.currentSubject
     );
 
     const sessionUpdate = {
@@ -184,7 +190,7 @@ export class StepFunRealtimeClient {
       type: 'session.update',
       session: {
         modalities: ['text', 'audio'],
-        instructions: personaInstructions,
+        instructions: subjectInstructions,
         voice: this.config.voice,
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
@@ -197,7 +203,7 @@ export class StepFunRealtimeClient {
 
     console.log('📤 Sending session update');
     console.log('   Model:', this.currentModel);
-    console.log('   Persona:', this.currentPersona);
+    console.log('   Subject:', this.currentSubject);
     console.log('   Voice:', this.config.voice);
     this.ws.send(JSON.stringify(sessionUpdate));
     console.log('✅ Session update sent');
@@ -221,7 +227,17 @@ export class StepFunRealtimeClient {
 
       case 'input_audio_buffer.speech_started':
         console.log('🎤 Speech started');
-        this.onStateChange?.('listening');
+
+        // 重要：如果AI正在响应，立即打断
+        // isAiResponding: AI正在生成或播放音频
+        // isPlaying: 音频正在播放
+        // audioQueue.length > 0: 有音频在队列中等待播放
+        if (this.isAiResponding || this.isPlaying || this.audioQueue.length > 0) {
+          console.log('🛑 用户打断！AI正在响应，立即停止');
+          this.interrupt();
+        } else {
+          this.onStateChange?.('listening');
+        }
         break;
 
       case 'input_audio_buffer.speech_stopped':
@@ -229,8 +245,18 @@ export class StepFunRealtimeClient {
         this.onStateChange?.('thinking');
         break;
 
+      case 'conversation.item.input_audio_transcription.completed':
+        // 用户语音转写完成
+        const userTranscript = event.transcript || '';
+        console.log('👤 User transcript:', userTranscript);
+        if (userTranscript && this.onUserTranscript) {
+          this.onUserTranscript(userTranscript);
+        }
+        break;
+
       case 'response.audio.delta':
-        // 收到音频数据
+        // 收到音频数据 - AI正在响应
+        this.isAiResponding = true;
         if (event.delta) {
           const audioData = this.base64ToArrayBuffer(event.delta);
           this.onAudio?.(audioData);
@@ -238,7 +264,8 @@ export class StepFunRealtimeClient {
         break;
 
       case 'response.audio_transcript.delta':
-        // 收到文字转录
+        // 收到文字转录 - AI正在响应
+        this.isAiResponding = true;
         if (event.delta) {
           this.onTranscript?.(event.delta);
         }
@@ -247,6 +274,7 @@ export class StepFunRealtimeClient {
       case 'response.audio.done':
       case 'response.audio_transcript.done':
         console.log('✅ Response done');
+        this.isAiResponding = false;
         // 记录使用数据
         this.trackUsage();
         break;
@@ -388,25 +416,25 @@ export class StepFunRealtimeClient {
   }
 
   /**
-   * 切换历史人设
+   * 切换学科
    */
-  updatePersona(persona: PersonaType): void {
-    console.log(`🎭 切换人设: ${this.currentPersona} → ${persona}`);
-    this.currentPersona = persona;
-    this.config.persona = persona;
+  updateSubject(subject: SubjectType): void {
+    console.log(`📚 切换学科: ${this.currentSubject} → ${subject}`);
+    this.currentSubject = subject;
+    this.config.subject = subject;
 
-    // 重新发送会话更新（应用新人设）
+    // 重新发送会话更新（应用新学科）
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.sendSessionUpdate();
-      console.log('✅ 人设已更新，新会话已创建');
+      console.log('✅ 学科已更新，新会话已创建');
     }
   }
 
   /**
-   * 获取当前人设
+   * 获取当前学科
    */
-  getCurrentPersona(): PersonaType {
-    return this.currentPersona;
+  getCurrentSubject(): SubjectType {
+    return this.currentSubject;
   }
 
   /**
@@ -626,5 +654,24 @@ export class StepFunRealtimeClient {
     }
     this.audioQueue = [];
     this.isPlaying = false;
+  }
+
+  /**
+   * 打断当前对话（用户开始说话）
+   * 停止音频播放，清空队列，清除音频缓冲
+   */
+  interrupt() {
+    console.log('🛑 用户打断，停止播放');
+
+    // 停止当前音频播放
+    this.stopPlayback();
+
+    // 清空音频缓冲
+    this.clearAudioBuffer();
+
+    // 通知状态变更
+    this.onStateChange?.('listening');
+
+    console.log('✅ 打断完成，等待用户输入');
   }
 }

@@ -1,5 +1,351 @@
 # Memory - Tony 使用 Claude Code 的记忆
 
+## 2026-01-18 (第一个测试用户反馈 - ✅测试通过)
+
+### 👥 目标受众（纠正理解）
+
+**目标用户**：所有大中小学生（小学、初中、高中、大学）
+
+**第一个测试用户**：
+- 身份：Tony的女儿，初一学生（7年级）
+- 测试角色：第一个真实用户，碰巧是初一
+- 测试价值：发现通用问题（简洁性、准确性）
+
+### 💡 核心反馈和需求
+
+#### 痛点1：AI话太多 ⚠️（通用问题）✅已解决
+**问题描述**：AI回答过于冗长，影响知识传递效率
+**本质问题**：
+- 开场白/过渡语/客套话太多
+- 喜欢重复用户的问题
+- 解释过于啰嗦
+- 不够精炼直接
+
+**核心诉求**：知识准确传递（最核心的价值点，适用于所有年龄段）
+
+**解决方案**：
+- ✅ 删除客套话（"问得好！""这个问题很有趣"）
+- ✅ 删除启发式提问（"你觉得呢？"）
+- ✅ 删除固定开场白和结尾套路
+- ✅ 字数限制：150字 → 30-80字
+- ✅ 简化学科技巧，删除花哨表达
+
+**测试结果**：✅ **"废话少了！好了很多！"** - 第一个真实用户满意！
+
+#### 需求2：新增两个学科
+1. **文学** - 古诗词、文言文、现代文阅读
+2. **天文学** - 星座、行星、宇宙探索
+
+**实施状态**：✅ 已添加（待测试反馈）
+
+### 🎯 产品方向（适用于大中小学生）
+
+**核心价值观**：
+- 简洁 > 丰富
+- 准确 > 全面
+- 直接 > 婉转
+- 实用 > 优雅
+
+**回答风格**：
+- 30-80字直接给答案（大中小学生通用）
+- 禁止客套话（"问得好！"等）
+- 可选推荐资源（复杂问题可推荐1个资源）
+- 知识点清晰，条理分明
+
+### 📊 优化验证
+
+**测试用户**：Tony的女儿（初一）
+**测试结果**：✅ 满意
+**核心改进**：废话大幅减少
+**产品方向**：✅ 得到验证
+
+---
+
+## 2026-01-17 (项目管理方法升级)
+
+### 🔄 迁移到 planning-with-files 技能
+
+#### 背景
+
+为了更好地管理复杂的多步骤任务，将项目管理工作从单一的 memory.md 迁移到使用 **planning-with-files** skill。
+
+#### 创建的文件
+
+**1. task_plan.md** - 任务计划
+- 5个阶段的 P1 功能实施计划
+  - Phase 1: 知识图谱可视化 (React Flow)
+  - Phase 2: WebSocket 实时知识提取集成
+  - Phase 3: 代码优化（Hooks、组件拆分）
+  - Phase 4: 集成测试
+  - Phase 5: 文档和交付
+- 包含关键问题、决策记录、错误日志
+
+**2. findings.md** - 研究发现
+- P1 功能需求清单
+- 技术调研发现（React Flow、知识图谱架构）
+- 技术决策表（决策 + 理由）
+- 资源链接（文档、项目文件）
+
+**3. progress.md** - 会话日志
+- 按阶段记录的详细行动日志
+- 测试结果表
+- 错误日志（带时间戳）
+- 5-Question 重启检查
+
+#### 工作方式
+
+**简单任务**（<5次工具调用）：
+- 直接执行，无需规划文件
+
+**复杂任务**（≥5次工具调用）：
+1. 创建/更新 task_plan.md
+2. 研究发现记录到 findings.md
+3. 会话进展记录到 progress.md
+4. 遵循 "2-Action Rule"：每2次查看/浏览操作后立即保存发现
+
+#### 关键原则
+
+1. **Read Before Decide** - 做决策前重新读取计划文件
+2. **Update After Act** - 完成阶段后立即更新状态
+3. **Log All Errors** - 记录所有错误，避免重复失败
+4. **Never Repeat Failures** - 失败后改变方法
+
+#### memory.md 的新定位
+
+**保留用途**：
+- 项目整体进度概览
+- 产品方法论和设计理念
+- 长期记忆和历史记录
+- 里程碑和成果总结
+
+**迁移到 planning-with-files**：
+- 具体开发任务管理
+- 技术研究和决策记录
+- 实时会话日志
+
+#### 文件位置
+
+```
+AiTutor/
+├── task_plan.md          # P1 功能任务计划
+├── findings.md           # 技术研究发现
+├── progress.md           # 会话进展日志
+└── .claude/
+    └── memory.md         # 项目记忆（本文档）
+```
+
+#### Git 状态
+
+这些新文件尚未提交。建议完成首个功能后再提交，以便测试工作流。
+
+---
+
+## 2026-01-11 (当前状态)
+
+### 📊 项目进度总览
+
+#### 当前阶段：阶段1验收测试阶段
+**状态**: ✅ 开发完成，等待产品经理验收测试
+
+**关键里程碑**:
+- 2026-01-06: 阶段1开发完成（历史人设系统 MVP）
+- 2026-01-09: 页面简化，聚焦知识卡片生成
+- 当前: 等待Tony执行用户验收测试
+
+#### 阶段1成果清单（已完成）
+1. ✅ **三种历史人设**
+   - 📖 说书人（生动故事风格）
+   - 🔍 历史侦探（推理分析风格）
+   - ⏰ 时间旅行者（第一人称沉浸）
+
+2. ✅ **智能对话增强**
+   - "如果"问题识别和引导
+   - 历史关键词自动检测
+   - 历史细节自动补充
+
+3. ✅ **知识卡片系统**（2026-01-09新增）
+   - 根据对话内容自动生成知识卡片
+   - 使用 StepFun Text API (step-1v-8k)
+   - 卡片包含：icon、title、content、tags
+
+4. ✅ **用户界面**
+   - 人设选择器（下拉式）
+   - 人设切换按钮（在Header中）
+   - 知识卡片生成按钮和展示面板
+
+#### 下步行动计划
+
+**优先级1⭐: 产品经理验收测试（本周）**
+- 访问地址: http://localhost:3000/realtime-voice
+- 测试文档: `docs/USER_TESTING_GUIDE.md`
+- 测试任务:
+  1. 测试说书人人设
+  2. 测试历史侦探人设
+  3. 测试时间旅行者人设
+  4. 测试"如果"问题增强
+  5. 测试人设切换功能
+  6. 测试历史关键词检测
+  7. 测试知识卡片生成
+
+**优先级2: 根据测试结果优化（本周）**
+- 优化人设提示词
+- 调整"如果"问题引导结构
+- 改进知识卡片生成逻辑
+- 修复发现的bug
+
+**优先级3: 学生验收测试（2周内）**
+- 招募5名不同历史水平的学生
+- 收集反馈数据
+- 目标满意度: ≥4.0/5.0
+
+#### 成功标准
+- [ ] 3种人设功能正常（≥90%测试通过）
+- [ ] "如果"问题识别准确率≥80%
+- [ ] 学生满意度≥4.0/5.0
+- [ ] 无严重bug（崩溃、数据丢失）
+- [ ] 性能可接受（切换<100ms，回答流畅）
+
+#### 核心文件
+- `web/lib/prompts/personas.ts` - 人设定义和提示词生成
+- `web/lib/history-enhancer.ts` - 历史对话增强逻辑
+- `web/lib/storage.ts` - LocalStorage 存储（新增）
+- `web/components/realtime-voice/PersonaSelector.tsx` - 人设选择器
+- `web/app/realtime-voice/page.tsx` - 主页面（含知识卡片）
+
+#### 文档位置
+- `docs/PHASE1_COMPLETION_SUMMARY.md` - 阶段1完成总结
+- `docs/USER_TESTING_GUIDE.md` - 用户测试指南 ⭐ 从这里开始
+- `docs/PHASE1_TESTING_REPORT.md` - 技术测试报告
+
+---
+
+## 2026-01-09 (下午)
+
+### 🎯 页面简化：移除假示意图，聚焦知识卡片生成
+
+#### 用户反馈
+
+Tony 认为页面上的假示意图（历史图片展示区、时间线组件）很难看，希望去掉。核心目标应该是：根据交互学习的内容进行分析提炼，通过 StepFun 相应的模型生成知识卡片帮助回顾和记忆。
+
+#### 实施内容
+
+**1. 删除假数据组件**
+- ❌ 删除：历史图片展示区（占位符🏛️、假的秦朝历史数据）
+- ❌ 删除：时间线组件（假的时间节点数据）
+- ❌ 删除：底部抽屉对话记录面板
+- ❌ 删除：相关状态变量（currentTimelineIndex, timelineData, showHistoryDrawer）
+
+**2. 添加知识卡片系统**
+- ✅ 新增：知识卡片状态管理（showKnowledgePanel, knowledgeCards, isGeneratingCards）
+- ✅ 新增：`handleGenerateKnowledgeCards()` 函数
+  - 提取对话历史内容
+  - 调用 StepFun Text API (step-1v-8k) 生成知识卡片
+  - 使用提示词工程让模型以 JSON 格式返回卡片数据
+  - 每张卡片包含：icon（emoji）、title（标题）、content（内容）、tags（标签）
+- ✅ 新增：知识卡片面板 UI（模态框展示）
+  - 生成中状态（加载动画）
+  - 空状态提示
+  - 卡片网格布局（渐变背景、图标、标签）
+- ✅ 新增："生成知识卡片"按钮（在对话历史区域）
+
+#### 技术实现
+
+```typescript
+// 知识卡片生成逻辑
+const handleGenerateKnowledgeCards = async () => {
+  // 1. 提取对话内容
+  const conversationText = conversations.map((conv, index) =>
+    `Q${index + 1}: ${conv.userMessage}\nA${index + 1}: ${conv.aiResponse}`
+  ).join('\n\n');
+
+  // 2. 调用 StepFun API
+  const response = await fetch('https://api.stepfun.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'step-1v-8k',
+      messages: [
+        {
+          role: 'system',
+          content: '你是一个知识提炼专家。请根据用户的对话内容，生成3-5张知识卡片...'
+        },
+        {
+          role: 'user',
+          content: `请根据以下对话内容生成知识卡片：\n\n${conversationText}`
+        }
+      ]
+    }),
+  });
+
+  // 3. 解析并展示
+  const cards = JSON.parse(content);
+  setKnowledgeCards(cards);
+};
+```
+
+#### UI 变化
+
+**之前**：
+- AI 老师形象展示区
+- 历史图片展示区（假数据）
+- 时间线组件（假数据）
+- 底部抽屉对话记录
+
+**现在**：
+- ✅ 简洁的欢迎标题
+- ✅ 对话状态卡片（麦克风按钮）
+- ✅ 当前对话展示
+- ✅ 对话历史列表
+- ✅ "生成知识卡片"按钮（橙色渐变，带 Sparkles 图标）
+- ✅ 知识卡片模态框（点击按钮后生成并展示）
+
+#### 符合产品方法论
+
+✅ **追求极致简单**：
+- 删除了约 150 行假数据代码
+- 页面更聚焦于核心功能（对话 + 知识卡片）
+- 减少视觉干扰，提升用户体验
+
+✅ **单点击穿**：
+- 一键生成知识卡片
+- 自动分析对话内容
+- 智能提炼知识点
+
+✅ **All-in 知识回顾**：
+- StepFun 模型负责分析提炼
+- 生成结构化知识卡片
+- 帮助用户回顾和记忆
+
+#### 文件变更
+
+- **web/app/realtime-voice/page.tsx**
+  - -150 行（删除假数据组件）
+  - +80 行（添加知识卡片功能）
+  - 净减少约 70 行代码
+
+#### 下一步优化建议
+
+1. **知识卡片持久化**：
+   - 将生成的卡片保存到 localStorage
+   - 支持查看历史卡片
+
+2. **卡片分享功能**：
+   - 导出卡片为图片
+   - 分享到社交媒体
+
+3. **卡片复习系统**：
+   - 间隔重复算法
+   - 提醒用户复习
+
+4. **多模态增强**：
+   - 为卡片添加相关历史图片
+   - 生成知识图谱
+
+---
+
 ## 2026-01-06 (傍晚)
 
 ### 📚 历史助手规划方案优化
@@ -76,6 +422,125 @@
 - Week 1-2: 验证核心假设（说书人人设）
 - Week 3-4: 完善MVP（3个人设）
 - Week 5+: 小范围发布（20-50用户）
+
+---
+
+## 2026-01-06 (晚上) - 阶段1开发完成
+
+### ✅ 阶段1 MVP实施完成
+
+#### 实施内容
+
+根据优化后的HISTORY_ASSISTANT_PLAN_V2.md，完成了阶段1（3周）的所有MVP功能开发。
+
+**1. 历史人设系统（3种人设）**
+
+创建了完整的提示词工程系统：
+
+- **web/lib/prompts/personas.ts** (219行)
+  - `storytellerPersona` (说书人): 📖 生动有趣，像讲故事
+  - `detectivePersona` (历史侦探): 🔍 推理分析，寻找线索
+  - `travelerPersona` (时间旅行者): ⏰ 第一人称，身临其境
+  - 每个人设包含：icon, color, systemPrompt, examples
+  - 导出函数：getPersona(), getAllPersonas(), getPersonaInstructions(), enhanceQuestionWithPersona()
+
+**2. 历史对话增强器**
+
+- **web/lib/history-enhancer.ts** (217行)
+  - `isWhatIfQuestion()`: 检测"如果"反事实问题
+  - `getWhatIfEnhancement()`: 生成"如果"问题的特殊引导
+  - `detectHistoricalKeywords()`: 检测历史关键词（人物、事件、时期、地点）
+  - `getEnhancedInstructions()`: 组合人设+增强的完整指令
+  - `analyzeQuestion()`: 分析问题类型和建议方法
+
+**3. 人设选择器UI组件**
+
+- **web/components/realtime-voice/PersonaSelector.tsx** (175行)
+  - 卡片式人设选择面板
+  - 颜色编码（琥珀色/蓝色/紫色）
+  - 显示人设描述和示例对话
+  - Framer Motion 动画过渡
+  - 当前人设高亮显示
+
+**4. WebSocket客户端集成**
+
+- **web/lib/stepfun-realtime.ts** (+43行)
+  - 添加 `persona` 和 `userLanguage` 配置
+  - 实现 `updatePersona()` 方法（动态切换人设，无需重连）
+  - 实现 `getCurrentPersona()` 和 `getUserLanguage()` 方法
+  - 修改 `sendSessionUpdate()` 使用人设提示词
+
+**5. 主页面集成**
+
+- **web/app/realtime-voice/page.tsx** (+11行)
+  - 添加 `currentPersona` 状态
+  - 创建 `handlePersonaChange` 回调
+  - 集成 `PersonaSelector` 组件到Header
+  - 在client初始化时传入persona配置
+
+#### 技术亮点
+
+1. **提示词工程**: 不依赖Tool Call API，完全可控
+2. **动态切换**: 人设可中途切换，无需重连WebSocket
+3. **模块化设计**: 清晰的文件结构和职责分离
+4. **TypeScript安全**: 完整的类型定义
+5. **双语支持**: 中英文系统提示词生成
+
+#### 编译测试
+
+```bash
+$ npm run build
+✓ Compiled successfully
+✓ Linting and checking validity of types
+
+Route (app):                              Size
+├ ○ /realtime-voice                     66.7 kB (+3.6 kB)
+```
+
+- ✅ 无TypeScript错误
+- ✅ Bundle增加+3.6 kB (可接受范围)
+- ✅ 开发服务器运行正常 (http://localhost:3000)
+
+#### Git提交
+
+- Commit: `d910085`
+- 消息: "feat: Add historical persona system (Phase 1 MVP)"
+- 文件变更: 5个文件，+686行，-3行
+- 新增: 3个文件（personas.ts, history-enhancer.ts, PersonaSelector.tsx）
+- 修改: 2个文件（stepfun-realtime.ts, page.tsx）
+
+#### 测试文档
+
+创建了完整的测试文档：
+
+1. **docs/PHASE1_TESTING_REPORT.md** - 技术测试报告（测试用例、检查清单）
+2. **docs/USER_TESTING_GUIDE.md** - 用户测试指南（友好步骤、评分表）
+3. **docs/CODE_VERIFICATION_REPORT.md** - 代码验证报告（实现验证、质量检查）
+
+#### 下一步行动
+
+**立即行动**:
+- ✅ 执行用户测试指南中的6个测试任务
+- ✅ 记录测试结果和问题
+- ✅ 收集反馈
+
+**本周内**:
+- 根据测试结果优化提示词
+- 修复发现的任何问题
+- 准备5名学生验收测试
+
+**2周内**:
+- 完成学生验收测试
+- 收集用户反馈
+- 迭代优化
+- 评估是否进入阶段2
+
+#### 核心价值
+
+1. **快速验证**: 3周MVP已完成，可立即测试
+2. **风险可控**: 0个高风险项，完全基于提示词工程
+3. **符合原则**: 完美践行"追求极致简单"
+4. **扩展性强**: 易于添加新人设和功能
 
 ---
 
