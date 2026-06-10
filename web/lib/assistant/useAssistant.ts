@@ -13,6 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { StepFunRealtimeClient } from "@/lib/stepfun-realtime";
 import { VoiceState } from "@/types/voice";
 import { askImage } from "@/lib/assistant/vision";
+import { ASSISTANT_INSTRUCTIONS } from "@/lib/prompts/assistant";
 
 export type MessageKind = "voice" | "text" | "image";
 
@@ -25,7 +26,8 @@ export interface AssistantMessage {
   timestamp: number;
 }
 
-export type ModelMode = "auto" | "quality" | "fast";
+/** v25 = step-2.5-realtime（新一代，默认）；其余为旧模型回退 */
+export type ModelMode = "v25" | "auto" | "quality" | "fast";
 
 const STORAGE_MESSAGES = "aitutor_assistant_messages";
 const STORAGE_SETTINGS = "aitutor_settings";
@@ -45,7 +47,7 @@ export function useAssistant() {
   const [streamingText, setStreamingText] = useState("");
   const [error, setError] = useState("");
   const [apiKey, setApiKeyState] = useState("");
-  const [modelMode, setModelModeState] = useState<ModelMode>("auto");
+  const [modelMode, setModelModeState] = useState<ModelMode>("v25");
   const [visionBusy, setVisionBusy] = useState(false);
 
   const clientRef = useRef<StepFunRealtimeClient | null>(null);
@@ -111,6 +113,13 @@ export function useAssistant() {
     (mode: ModelMode) => {
       setModelModeState(mode);
       persistSettings(apiKey, mode);
+      // 空闲（未开麦）时断开旧连接，让新模型立即生效；对话中则下次会话生效
+      if (!micOnRef.current && clientRef.current) {
+        clientRef.current.disconnect();
+        clientRef.current = null;
+        setSessionActive(false);
+        setVoiceState("idle");
+      }
     },
     [apiKey, persistSettings]
   );
@@ -176,15 +185,19 @@ export function useAssistant() {
     setVoiceState("connecting");
 
     const preferredModel =
-      modelMode === "quality"
-        ? ("step-audio-2" as const)
-        : modelMode === "fast"
-          ? ("step-audio-2-mini" as const)
-          : undefined;
+      modelMode === "v25"
+        ? ("step-2.5-realtime" as const)
+        : modelMode === "quality"
+          ? ("step-audio-2" as const)
+          : modelMode === "fast"
+            ? ("step-audio-2-mini" as const)
+            : undefined;
 
     const client = new StepFunRealtimeClient({
       apiKey,
       voice: "qingchunshaonv",
+      instructions: ASSISTANT_INSTRUCTIONS,
+      promptMode: "custom",
       enableModelSelection: modelMode === "auto",
       preferredModel,
       userLanguage: "zh",

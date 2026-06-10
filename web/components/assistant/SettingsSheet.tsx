@@ -20,7 +20,8 @@ interface SettingsSheetProps {
 }
 
 const MODES: { id: ModelMode; label: string; hint: string }[] = [
-  { id: "auto", label: "自动", hint: "智能调度（推荐）" },
+  { id: "v25", label: "2.5 新模型", hint: "情绪感知（推荐）" },
+  { id: "auto", label: "自动", hint: "旧模型智能调度" },
   { id: "quality", label: "高质量", hint: "step-audio-2" },
   { id: "fast", label: "快速", hint: "audio-2-mini" },
 ];
@@ -98,7 +99,7 @@ export function SettingsSheet({
                 <label className="text-xs tracking-wider text-[hsl(var(--ink-soft))]">
                   对话模型
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {MODES.map((mode) => (
                     <button
                       key={mode.id}
@@ -115,7 +116,7 @@ export function SettingsSheet({
                   ))}
                 </div>
                 <p className="text-[11px] text-[hsl(var(--ink-soft))]/70">
-                  切换将在下次开启对话时生效
+                  空闲时切换立即生效；对话中切换将在下次会话生效
                 </p>
               </div>
 

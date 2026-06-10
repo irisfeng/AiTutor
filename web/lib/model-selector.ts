@@ -12,12 +12,12 @@ export interface ModelSelectionContext {
   devicePerformance: 'high' | 'medium' | 'low';
   userPreferences: {
     dataSaver: boolean;
-    preferredModel?: 'step-audio-2' | 'step-audio-2-mini';
+    preferredModel?: 'step-audio-2' | 'step-audio-2-mini' | 'step-2.5-realtime';
   };
 }
 
 export interface ModelSelectionResult {
-  selectedModel: 'step-audio-2' | 'step-audio-2-mini';
+  selectedModel: 'step-audio-2' | 'step-audio-2-mini' | 'step-2.5-realtime';
   complexityScore: number;
   reason: string;
 }

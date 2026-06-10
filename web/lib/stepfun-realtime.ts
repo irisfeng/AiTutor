@@ -9,15 +9,20 @@ import {
 import { getModelAnalytics, ModelUsageRecord } from './model-analytics';
 import { type SubjectType, getPersonaInstructions } from './prompts/personas';
 
+/** 可用的实时语音模型（step-2.5-realtime 为 2026-05 发布的新一代） */
+export type RealtimeModel = 'step-audio-2' | 'step-audio-2-mini' | 'step-2.5-realtime';
+
 export interface StepFunConfig {
   apiKey: string;
   model?: string;
   voice?: string;
   instructions?: string;
+  // 提示词来源：'subject' 用学科人设（旧页面默认），'custom' 用 instructions 字段
+  promptMode?: 'subject' | 'custom';
   // 智能调度配置
   enableModelSelection?: boolean;
   dataSaver?: boolean;
-  preferredModel?: 'step-audio-2' | 'step-audio-2-mini';
+  preferredModel?: RealtimeModel;
   // 学科配置
   subject?: SubjectType;
   userLanguage?: 'zh' | 'en';
@@ -41,7 +46,7 @@ export class StepFunRealtimeClient {
   private latencyMeasurer: NetworkLatencyMeasurer;
   private performanceDetector: DevicePerformanceDetector;
   private conversationTurns: number = 0;
-  private currentModel: 'step-audio-2' | 'step-audio-2-mini' = 'step-audio-2';
+  private currentModel: RealtimeModel = 'step-audio-2';
   private lastUserQuery: string = '';
   private responseStartTime: number = 0;
   private selectedModelInfo: ModelSelectionResult | null = null;
@@ -180,17 +185,18 @@ export class StepFunRealtimeClient {
       return;
     }
 
-    // 使用学科提示词
-    const subjectInstructions = getPersonaInstructions(
-      this.currentSubject
-    );
+    // 提示词：custom 模式用调用方传入的 instructions（新版个人助理），否则用学科人设
+    const instructions =
+      this.config.promptMode === 'custom' && this.config.instructions
+        ? this.config.instructions
+        : getPersonaInstructions(this.currentSubject);
 
     const sessionUpdate = {
       event_id: this.generateEventId(),
       type: 'session.update',
       session: {
         modalities: ['text', 'audio'],
-        instructions: subjectInstructions,
+        instructions,
         voice: this.config.voice,
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
@@ -418,11 +424,15 @@ export class StepFunRealtimeClient {
   private trackUsage() {
     if (!this.selectedModelInfo) return;
 
+    // 使用统计仅覆盖智能调度的两个旧模型，2.5 不参与
+    const modelUsed = this.currentModel;
+    if (modelUsed === 'step-2.5-realtime') return;
+
     const responseTime = Date.now() - this.responseStartTime;
 
     const record: ModelUsageRecord = {
       timestamp: Date.now(),
-      modelUsed: this.currentModel,
+      modelUsed,
       complexityScore: this.selectedModelInfo.complexityScore,
       responseTime,
       networkLatency: this.latencyMeasurer.getAverageLatency(),

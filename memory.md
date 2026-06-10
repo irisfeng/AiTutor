@@ -31,6 +31,13 @@
   - `next.config.js` 里 mermaid/cytoscape 的遗留 webpack 配置导致 Next 16 Turbopack 构建失败，已清空
   - 删除死代码：`PersonaSelector.tsx`（引用了不存在的导出，阻塞构建）、`stepfun-realtime 2.ts`（意外的重复文件）
 
+### 2026-06-10（二）升级 step-2.5-realtime + 个人助理人设
+
+- **背景**：StepFun 于 2026-05-08 发布 StepAudio 2.5 Realtime（模型名 `step-2.5-realtime`，端点不变），新增副语言感知（听懂语气/情绪/叹气/笑声）、原生人设机制、约 200ms 延迟
+- **提示词重写**：首页助手人设从"AI 导师"改为**智能个人助理/秘书**（`lib/prompts/assistant.ts`），强调口语化、≤50字、情绪感知、主动确认、不编造；旧页面 `/tutor` 的学科人设不受影响（客户端新增 `promptMode: 'subject' | 'custom'` 区分）
+- **模型选项**：设置抽屉改为 4 档——「2.5 新模型（默认推荐）/ 自动 / 高质量 / 快速」，旧模型保留作回退；空闲时切换立即生效（自动断开重连），对话中切换下次会话生效
+- **待真机验证**：2.5 的计价、音色 `qingchunshaonv` 是否沿用（沙箱访问不了官方文档，需 tony 本地实测）
+
 ## 已知注意事项
 
 - 本地依赖安装命令：`npm install --legacy-peer-deps`
