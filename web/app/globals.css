@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -583,4 +583,140 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* ===== 墨夜 · 暖珀 —— 移动端全双工助手主题 ===== */
+
+.theme-ink {
+    /* 深墨暖黑底色系 */
+    --ink: 30 12% 6%;          /* 主背景 */
+    --ink-raised: 28 10% 11%;  /* 抽屉/浮层 */
+    --ink-bright: 36 20% 92%;  /* 主文字 */
+    --ink-soft: 32 8% 58%;     /* 次级文字 */
+    --ink-line: 30 8% 22%;     /* 边线 */
+
+    /* 琥珀生命色 */
+    --ember: 32 96% 58%;        /* 主琥珀 */
+    --ember-bright: 36 100% 78%;/* 亮琥珀（文字用） */
+    --ember-deep: 18 90% 48%;   /* 深余烬 */
+
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Source Sans 3",
+        "Microsoft YaHei", sans-serif;
+}
+
+.theme-ink .font-display {
+    font-family: "Fraunces", "Playfair Display", Georgia, serif;
+    font-weight: 500;
+}
+
+/* 背景渐晕：中央微亮，四角沉入墨色 */
+.ink-vignette {
+    background:
+        radial-gradient(
+            ellipse 120% 70% at 50% 30%,
+            hsl(28 30% 11%) 0%,
+            hsl(30 12% 6%) 58%,
+            hsl(30 14% 4%) 100%
+        );
+}
+
+/* 颗粒质感 */
+.ink-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='inkNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23inkNoise)' opacity='0.05'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+}
+
+/* ---- 语音球 ---- */
+
+/* 远景光晕 */
+.orb-halo {
+    background: radial-gradient(
+        circle at 50% 45%,
+        hsl(var(--ember) / 0.5) 0%,
+        hsl(var(--ember-deep) / 0.25) 45%,
+        transparent 72%
+    );
+}
+
+/* 球体本体：琥珀核心 + 余烬边缘 */
+.orb-core {
+    background:
+        radial-gradient(
+            circle at 38% 32%,
+            hsl(40 100% 82%) 0%,
+            hsl(var(--ember)) 34%,
+            hsl(var(--ember-deep)) 68%,
+            hsl(14 75% 30%) 100%
+        );
+    box-shadow:
+        0 0 60px hsl(var(--ember) / 0.35),
+        0 0 120px hsl(var(--ember-deep) / 0.2),
+        inset 0 -18px 48px hsl(10 80% 22% / 0.55),
+        inset 0 10px 30px hsl(45 100% 88% / 0.35);
+}
+
+/* 内部流转的光：旋转的偏心高光 */
+.orb-swirl {
+    background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        hsl(45 100% 85% / 0.22) 12%,
+        transparent 30%,
+        hsl(20 95% 55% / 0.18) 55%,
+        transparent 75%,
+        hsl(45 100% 85% / 0.12) 90%,
+        transparent 100%
+    );
+    border-radius: 50%;
+    filter: blur(12px);
+}
+
+/* 顶部玻璃高光 */
+.orb-gloss {
+    background: linear-gradient(
+        165deg,
+        hsl(0 0% 100% / 0.28) 0%,
+        transparent 38%
+    );
+}
+
+/* 思考时的微光闪烁 */
+.orb-shimmer {
+    background: radial-gradient(
+        circle at 50% 50%,
+        hsl(45 100% 90% / 0.4) 0%,
+        transparent 55%
+    );
+    animation: orb-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes orb-shimmer {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.85; }
+}
+
+/* 听 · 涟漪扩散 */
+@keyframes orb-ripple {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.55); opacity: 0; }
+}
+
+.animate-orb-ripple {
+    animation: orb-ripple 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* 说 · 脉动环 */
+@keyframes orb-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.08); opacity: 0.15; }
+}
+
+.animate-orb-pulse {
+    animation: orb-pulse 1.1s ease-in-out infinite;
+}
+
+/* 移动端：禁止整页橡皮筋滚动 */
+.theme-ink {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
 }

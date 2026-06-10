@@ -311,6 +311,40 @@ export class StepFunRealtimeClient {
     this.ws.send(JSON.stringify(message));
   }
 
+  /**
+   * 发送文字消息（多模态：打字代替说话）
+   * 创建文本对话项并立即请求 AI 响应
+   */
+  sendText(text: string) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket not connected');
+      this.onError?.('尚未连接，请稍后再试');
+      return;
+    }
+
+    this.ws.send(
+      JSON.stringify({
+        event_id: this.generateEventId(),
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{ type: 'input_text', text }],
+        },
+      })
+    );
+
+    this.ws.send(
+      JSON.stringify({
+        event_id: this.generateEventId(),
+        type: 'response.create',
+      })
+    );
+
+    this.responseStartTime = Date.now();
+    this.setUserQuery(text);
+  }
+
   startConversation() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error('WebSocket not connected');

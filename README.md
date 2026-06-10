@@ -1,14 +1,16 @@
-# AiTutor - 实时 AI 语音助手
+# AiTutor - 全双工多模态 AI 助手
 
-> 基于 StepFun Realtime API 的实时语音交互应用
+> 基于 StepFun Realtime API 的移动端多模态实时交互应用
 
 ## ✨ 特性
 
-- 🎤 **实时语音识别**：基于服务端 VAD 的智能语音检测
-- 🤖 **自然对话**：流畅的 AI 语音交互体验
-- 🎯 **打断支持**：随时可打断 AI 回复，实现自然对话流程
-- 📝 **对话历史**：优雅的对话记录展示
-- 🎨 **精美 UI**：深空极简主义设计风格
+- 🔄 **全双工对话**：开口即说，AI 回答时随时打断，像和人说话一样自然
+- 🎤 **实时语音**：会话期间麦克风常开，服务端 VAD 智能分轮
+- ⌨️ **文字提问**：打字与语音走同一条实时通道
+- 📷 **图片理解**：拍照/相册提问，视觉模型解答
+- 🎨 **「墨夜·暖珀」设计**：深墨底色 + 琥珀语音球，移动端单屏体验
+
+> 设计与产品说明见 [docs/MOBILE_REDESIGN.md](./docs/MOBILE_REDESIGN.md)；旧版知识导师在 `/tutor` 路由。
 
 ## 🚀 快速开始
 
@@ -21,7 +23,7 @@
 
 ```bash
 cd web
-npm install
+npm install --legacy-peer-deps
 ```
 
 ### 配置
@@ -32,14 +34,11 @@ npm install
 ### 运行
 
 ```bash
-# 启动 WebSocket 代理服务器
-node server.js
-
-# 新开终端，启动 Next.js 开发服务器
-npm run dev
+# 同时启动 Next.js（3003）和 WebSocket 代理（3004）
+npm run dev:all
 ```
 
-访问 [http://localhost:3000/realtime-voice](http://localhost:3000/realtime-voice)
+访问 [http://localhost:3003](http://localhost:3003)（建议用手机尺寸的窗口体验）
 
 ### 构建
 
@@ -50,8 +49,8 @@ npm start
 
 ## 🛠️ 技术栈
 
-- **前端框架**：Next.js 14 (App Router)
-- **UI 框架**：React 18
+- **前端框架**：Next.js 16 (App Router)
+- **UI 框架**：React 19
 - **样式**：Tailwind CSS
 - **动画**：Framer Motion
 - **语言**：TypeScript
