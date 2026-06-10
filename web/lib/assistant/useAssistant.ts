@@ -195,7 +195,9 @@ export function useAssistant() {
 
     const client = new StepFunRealtimeClient({
       apiKey,
-      voice: "qingchunshaonv",
+      // 音色按模型区分：2.5 与旧模型音色库不同（linjiajiejie 为 2.5 官方文档示例音色）
+      // 若音色不兼容，客户端会自动降级为服务端默认音色重试
+      voice: modelMode === "v25" ? "linjiajiejie" : "qingchunshaonv",
       instructions: ASSISTANT_INSTRUCTIONS,
       enableModelSelection: modelMode === "auto",
       preferredModel,

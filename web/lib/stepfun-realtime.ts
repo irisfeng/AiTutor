@@ -54,6 +54,9 @@ export class StepFunRealtimeClient {
   // 打断检测相关
   private isAiResponding: boolean = false; // AI是否正在生成或播放响应
 
+  // 音色兼容性降级：服务端报错时自动改用默认音色重试一次
+  private voiceFallbackTried: boolean = false;
+
   constructor(config: StepFunConfig) {
     this.config = {
       model: 'step-audio-2',
@@ -65,12 +68,9 @@ export class StepFunRealtimeClient {
     };
 
     // 验证音色是否有效
-    const validVoices = ['qingchunshaonv', 'wenrounansheng'];
-    if (!validVoices.includes(this.config.voice || '')) {
-      console.warn(`⚠️ Invalid voice: ${this.config.voice}`);
-      console.warn(`🔄 Auto-changing to: qingchunshaonv`);
-      this.config.voice = 'qingchunshaonv';
-    }
+    // 注意：不再强制锁死音色白名单——2.5 等新模型的音色与旧模型不同
+    // （旧模型：qingchunshaonv / wenrounansheng；2.5 文档示例：linjiajiejie）
+    // 若音色无效，服务端会报错，届时自动降级为默认音色重试（见 handleEvent 'error' 分支）
 
     // 初始化智能调度组件
     this.modelSelector = new AudioModelSelector();
@@ -159,31 +159,38 @@ export class StepFunRealtimeClient {
     });
   }
 
-  private sendSessionUpdate() {
+  private sendSessionUpdate(options?: { omitVoice?: boolean }) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error('WebSocket not connected');
       return;
     }
 
-    const sessionUpdate = {
-      event_id: this.generateEventId(),
-      type: 'session.update',
-      session: {
-        modalities: ['text', 'audio'],
-        instructions: this.config.instructions,
-        voice: this.config.voice,
-        input_audio_format: 'pcm16',
-        output_audio_format: 'pcm16',
-        turn_detection: {
-          type: 'server_vad',
-        },
-        model: this.currentModel, // 使用当前选择的模型
+    // 模型由连接 URL 的 ?model= 参数决定，session.update 不传 model 字段
+    // （标准 Realtime 协议无此字段，新模型可能严格校验）
+    const session: Record<string, unknown> = {
+      modalities: ['text', 'audio'],
+      instructions: this.config.instructions,
+      input_audio_format: 'pcm16',
+      output_audio_format: 'pcm16',
+      turn_detection: {
+        type: 'server_vad',
       },
     };
 
+    // 音色降级重试时省略 voice，让服务端使用该模型的默认音色
+    if (!options?.omitVoice && this.config.voice) {
+      session.voice = this.config.voice;
+    }
+
+    const sessionUpdate = {
+      event_id: this.generateEventId(),
+      type: 'session.update',
+      session,
+    };
+
     console.log('📤 Sending session update');
-    console.log('   Model:', this.currentModel);
-    console.log('   Voice:', this.config.voice);
+    console.log('   Model (via URL):', this.currentModel);
+    console.log('   Voice:', options?.omitVoice ? '(服务端默认)' : this.config.voice);
     this.ws.send(JSON.stringify(sessionUpdate));
     console.log('✅ Session update sent');
   }
@@ -258,13 +265,30 @@ export class StepFunRealtimeClient {
         this.trackUsage();
         break;
 
-      case 'error':
-        console.error('❌ Server error:', event.error);
+      case 'error': {
+        // 打印完整事件，避免 error 对象序列化后丢失信息
+        console.error('❌ Server error (full event):', JSON.stringify(event, null, 2));
+        const errorMsg =
+          event.error?.message ||
+          event.error?.type ||
+          event.error?.code ||
+          (event.error ? JSON.stringify(event.error) : '') ||
+          JSON.stringify(event);
+
+        // 自动降级：会话建立初期报错，可能是音色与该模型不兼容
+        // 重发一次省略 voice 的 session.update，让服务端用默认音色
+        if (!this.voiceFallbackTried && this.config.voice && this.ws?.readyState === WebSocket.OPEN) {
+          this.voiceFallbackTried = true;
+          console.warn(`⚠️ 疑似音色不兼容（voice=${this.config.voice}），尝试服务端默认音色重试…`);
+          this.onError?.(`连接遇到问题（${errorMsg}），正在用默认音色重试…`);
+          this.sendSessionUpdate({ omitVoice: true });
+          break;
+        }
+
         this.onStateChange?.('idle');
-        const errorMsg = event.error?.message || event.error?.type || '未知错误';
-        // 使用回调代替alert
         this.onError?.(`API 错误: ${errorMsg}`);
         break;
+      }
 
       default:
         console.log('📄 Unhandled event type:', event.type);
