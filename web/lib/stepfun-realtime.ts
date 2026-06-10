@@ -7,7 +7,6 @@ import {
   DevicePerformanceDetector,
 } from './model-selector';
 import { getModelAnalytics, ModelUsageRecord } from './model-analytics';
-import { type SubjectType, getPersonaInstructions } from './prompts/personas';
 
 /** 可用的实时语音模型（step-2.5-realtime 为 2026-05 发布的新一代） */
 export type RealtimeModel = 'step-audio-2' | 'step-audio-2-mini' | 'step-2.5-realtime';
@@ -17,15 +16,10 @@ export interface StepFunConfig {
   model?: string;
   voice?: string;
   instructions?: string;
-  // 提示词来源：'subject' 用学科人设（旧页面默认），'custom' 用 instructions 字段
-  promptMode?: 'subject' | 'custom';
   // 智能调度配置
   enableModelSelection?: boolean;
   dataSaver?: boolean;
   preferredModel?: RealtimeModel;
-  // 学科配置
-  subject?: SubjectType;
-  userLanguage?: 'zh' | 'en';
 }
 
 export class StepFunRealtimeClient {
@@ -57,10 +51,6 @@ export class StepFunRealtimeClient {
   private reconnectDelay: number = 2000; // 2秒
   private isManualDisconnect: boolean = false;
 
-  // 学科相关
-  private currentSubject: SubjectType = 'history';
-  private userLanguage: 'zh' | 'en' = 'zh';
-
   // 打断检测相关
   private isAiResponding: boolean = false; // AI是否正在生成或播放响应
 
@@ -71,18 +61,8 @@ export class StepFunRealtimeClient {
       instructions: '你是由阶跃星辰提供的AI聊天助手，你擅长中文，英文，以及多种其他语言的对话。请简洁友好地回答，每次回答不超过50字。请使用默认女声与用户交流。',
       enableModelSelection: true, // 默认启用智能调度
       dataSaver: false,
-      subject: 'history', // 默认使用历史学科
-      userLanguage: 'zh', // 默认中文
       ...config,
     };
-
-    // 初始化学科和语言
-    if (this.config.subject) {
-      this.currentSubject = this.config.subject;
-    }
-    if (this.config.userLanguage) {
-      this.userLanguage = this.config.userLanguage;
-    }
 
     // 验证音色是否有效
     const validVoices = ['qingchunshaonv', 'wenrounansheng'];
@@ -185,18 +165,12 @@ export class StepFunRealtimeClient {
       return;
     }
 
-    // 提示词：custom 模式用调用方传入的 instructions（新版个人助理），否则用学科人设
-    const instructions =
-      this.config.promptMode === 'custom' && this.config.instructions
-        ? this.config.instructions
-        : getPersonaInstructions(this.currentSubject);
-
     const sessionUpdate = {
       event_id: this.generateEventId(),
       type: 'session.update',
       session: {
         modalities: ['text', 'audio'],
-        instructions,
+        instructions: this.config.instructions,
         voice: this.config.voice,
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
@@ -209,7 +183,6 @@ export class StepFunRealtimeClient {
 
     console.log('📤 Sending session update');
     console.log('   Model:', this.currentModel);
-    console.log('   Subject:', this.currentSubject);
     console.log('   Voice:', this.config.voice);
     this.ws.send(JSON.stringify(sessionUpdate));
     console.log('✅ Session update sent');
@@ -457,35 +430,6 @@ export class StepFunRealtimeClient {
     this.conversationTurns = 0;
     this.lastUserQuery = '';
     this.selectedModelInfo = null;
-  }
-
-  /**
-   * 切换学科
-   */
-  updateSubject(subject: SubjectType): void {
-    console.log(`📚 切换学科: ${this.currentSubject} → ${subject}`);
-    this.currentSubject = subject;
-    this.config.subject = subject;
-
-    // 重新发送会话更新（应用新学科）
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.sendSessionUpdate();
-      console.log('✅ 学科已更新，新会话已创建');
-    }
-  }
-
-  /**
-   * 获取当前学科
-   */
-  getCurrentSubject(): SubjectType {
-    return this.currentSubject;
-  }
-
-  /**
-   * 获取当前语言
-   */
-  getUserLanguage(): 'zh' | 'en' {
-    return this.userLanguage;
   }
 
   /**

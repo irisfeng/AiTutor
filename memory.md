@@ -38,6 +38,16 @@
 - **模型选项**：设置抽屉改为 4 档——「2.5 新模型（默认推荐）/ 自动 / 高质量 / 快速」，旧模型保留作回退；空闲时切换立即生效（自动断开重连），对话中切换下次会话生效
 - **待真机验证**：2.5 的计价、音色 `qingchunshaonv` 是否沿用（沙箱访问不了官方文档，需 tony 本地实测）
 
+### 2026-06-10（三）极简重构：全仓库瘦身（tony 拍板 A+B+C 全删）
+
+- **删除**（约 50 个文件、6000+ 行，全部可从 main 分支/git 历史找回）：
+  - 死代码：6 个无引用组件、knowledge-extractor/history-enhancer 链、重复的 tailwind/postcss 配置
+  - 旧产品：`/tutor`（知识导师+七学科）、`/realtime-voice`、学科提示词、学科检测、知识卡片 API、i18n 双语包、旧存储模块、config/models
+  - 历史文档：根目录 6 个过程文档 + docs/ 下 22 个旧阶段报告
+- **瘦身**：StepFunRealtimeClient 移除学科/promptMode/userLanguage 耦合，instructions 直通；globals.css 从 700+ 行减到 ~160 行（只剩墨夜主题）；tailwind.config 极简化；卸载 i18next/react-i18next/clsx/tailwind-merge 四个无用依赖
+- **现状**：整个应用只有一个路由 `/`，文档只留 README/CHANGELOG/memory + docs 下 3 个
+- 构建通过（仅 / 和 /_not-found 两个静态页），烟雾测试正常
+
 ## 已知注意事项
 
 - 本地依赖安装命令：`npm install --legacy-peer-deps`

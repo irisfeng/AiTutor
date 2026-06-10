@@ -10,7 +10,7 @@
 - 📷 **图片理解**：拍照/相册提问，视觉模型解答
 - 🎨 **「墨夜·暖珀」设计**：深墨底色 + 琥珀语音球，移动端单屏体验
 
-> 设计与产品说明见 [docs/MOBILE_REDESIGN.md](./docs/MOBILE_REDESIGN.md)；旧版知识导师在 `/tutor` 路由。
+> 设计与产品说明见 [docs/MOBILE_REDESIGN.md](./docs/MOBILE_REDESIGN.md)；旧版知识导师等历史代码已极简重构移除，保留在 main 分支与 git 历史中。
 
 ## 🚀 快速开始
 

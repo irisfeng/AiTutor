@@ -197,10 +197,8 @@ export function useAssistant() {
       apiKey,
       voice: "qingchunshaonv",
       instructions: ASSISTANT_INSTRUCTIONS,
-      promptMode: "custom",
       enableModelSelection: modelMode === "auto",
       preferredModel,
-      userLanguage: "zh",
     });
 
     try {
